@@ -117,3 +117,22 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# Shattlecoach project additions
+# Secrets — keys live only in local .env, never committed.
+frontend/.env
+frontend/.env.local
+
+# IDE
+.idea/
+*.iml
+frontend/shattlecoach.iml
+
+# Inference workspace artifacts (Donghwi's domain)
+inference/data/
+inference/artifacts/*.tflite
+inference/artifacts/*.onnx
+inference/**/__pycache__/
+inference/**/*.pyc
+inference/.venv/
+inference/wandb/
