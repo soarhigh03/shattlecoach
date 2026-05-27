@@ -160,9 +160,7 @@ class _PermissionCard extends StatelessWidget {
             else
               TextButton(
                 onPressed: onRequest,
-                child: Text(
-                  status == _PermStatus.denied ? '재요청' : '허용',
-                ),
+                child: Text(status == _PermStatus.denied ? '재요청' : '허용'),
               ),
           ],
         ),

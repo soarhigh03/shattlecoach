@@ -20,9 +20,12 @@ class SettingsScreen extends ConsumerWidget {
         child: ListView(
           children: [
             const SizedBox(height: 8),
-            _AccountTile(email: user?.email, displayName: user?.userMetadata?['full_name'] as String?),
+            _AccountTile(
+              email: user?.email,
+              displayName: user?.userMetadata?['full_name'] as String?,
+            ),
             const SizedBox(height: 8),
-            _SectionHeader(text: '앱 정보'),
+            const _SectionHeader(text: '앱 정보'),
             ListTile(
               leading: const Icon(Icons.info_outline),
               title: const Text('버전'),
@@ -38,7 +41,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            _SectionHeader(text: '개발자 도구'),
+            const _SectionHeader(text: '개발자 도구'),
             ListTile(
               leading: const Icon(Icons.restart_alt),
               title: const Text('온보딩 다시 보기'),
@@ -91,7 +94,10 @@ class _AccountTile extends StatelessWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: theme.colorScheme.primaryContainer,
-                child: Icon(Icons.person, color: theme.colorScheme.onPrimaryContainer),
+                child: Icon(
+                  Icons.person,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(

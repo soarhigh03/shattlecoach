@@ -108,7 +108,10 @@ class _ConfigNotice extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: theme.colorScheme.onSecondaryContainer),
+          Icon(
+            Icons.info_outline,
+            color: theme.colorScheme.onSecondaryContainer,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

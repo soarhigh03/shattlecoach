@@ -33,7 +33,11 @@ class FeaturePlaceholder extends StatelessWidget {
                   color: theme.colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, color: theme.colorScheme.onPrimaryContainer, size: 28),
+                child: Icon(
+                  icon,
+                  color: theme.colorScheme.onPrimaryContainer,
+                  size: 28,
+                ),
               ),
               const SizedBox(height: 16),
               Text(
@@ -104,7 +108,10 @@ class _Bullet extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Text(text, style: theme.textTheme.bodyMedium?.copyWith(height: 1.45)),
+          child: Text(
+            text,
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
+          ),
         ),
       ],
     );

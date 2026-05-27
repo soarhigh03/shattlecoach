@@ -39,7 +39,9 @@ class AuthService {
     }
 
     final googleSignIn = GoogleSignIn(
-      clientId: defaultTargetPlatform == TargetPlatform.iOS ? iosClientId : null,
+      clientId: defaultTargetPlatform == TargetPlatform.iOS
+          ? iosClientId
+          : null,
       serverClientId: webClientId,
     );
 

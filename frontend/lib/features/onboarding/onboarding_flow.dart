@@ -42,7 +42,11 @@ class OnboardingFlow extends StatelessWidget {
                   }
                 },
               ),
-        title: _StepIndicator(current: step, total: _steps.length, color: colors.primary),
+        title: _StepIndicator(
+          current: step,
+          total: _steps.length,
+          color: colors.primary,
+        ),
         centerTitle: true,
       ),
       body: SafeArea(child: child),

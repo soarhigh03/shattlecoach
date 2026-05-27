@@ -49,7 +49,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // While prefs are loading, hold at splash.
       if (onboardingAsync.isLoading) {
-        return state.matchedLocation == AppRoute.splash ? null : AppRoute.splash;
+        return state.matchedLocation == AppRoute.splash
+            ? null
+            : AppRoute.splash;
       }
       final onboardingDone = onboardingAsync.value ?? false;
       final loc = state.matchedLocation;
@@ -74,10 +76,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     },
     refreshListenable: _RouterRefresh(ref),
     routes: [
-      GoRoute(
-        path: AppRoute.splash,
-        builder: (_, _) => const _SplashScreen(),
-      ),
+      GoRoute(path: AppRoute.splash, builder: (_, _) => const _SplashScreen()),
       ShellRoute(
         builder: (context, state, child) => OnboardingFlow(child: child),
         routes: [
@@ -146,8 +145,6 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

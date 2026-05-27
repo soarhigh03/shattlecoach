@@ -69,9 +69,7 @@ class _WelcomePageState extends State<WelcomePage> {
             children: [
               FilledButton(
                 onPressed: _next,
-                child: Text(
-                  _page == _slides.length - 1 ? '시작하기' : '다음',
-                ),
+                child: Text(_page == _slides.length - 1 ? '시작하기' : '다음'),
               ),
               const SizedBox(height: 12),
               TextButton(
