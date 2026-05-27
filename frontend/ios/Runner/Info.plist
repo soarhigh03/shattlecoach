@@ -65,8 +65,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<!-- TODO: replace with REVERSED_CLIENT_ID from GoogleService-Info / Google Cloud Console -->
-				<string>com.googleusercontent.apps.REPLACE_WITH_REVERSED_CLIENT_ID</string>
+				<string>com.googleusercontent.apps.281776542360-cujs153jih5jmr5f65n2p7vle4kq1gb6</string>
 			</array>
 		</dict>
 	</array>
