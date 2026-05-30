@@ -104,9 +104,28 @@ class _PostComposeScreenState extends ConsumerState<PostComposeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isExecAsync = ref.watch(isExecutiveProvider);
+    // Snap kind down to sharing once we confirm the user isn't an exec — RLS
+    // would otherwise reject a group_buy insert from a regular member.
+    ref.listen<AsyncValue<bool>>(isExecutiveProvider, (_, next) {
+      if (widget.editing != null) return;
+      if (next.valueOrNull == false && _kind == PostKind.groupBuy) {
+        setState(() => _kind = PostKind.sharing);
+      }
+    });
     final isExec = isExecAsync.value ?? false;
     final isEditing = widget.editing != null;
     final canPickGroupBuy = isExec;
+    final roleReady = isExecAsync.hasValue;
+    final kindAllowed = _kind == PostKind.sharing || isExec;
+    // Cached case: provider already resolved to false before this build, so
+    // the listener above won't fire. Snap post-frame to avoid setState during build.
+    if (!isEditing && roleReady && !isExec && _kind == PostKind.groupBuy) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _kind == PostKind.groupBuy) {
+          setState(() => _kind = PostKind.sharing);
+        }
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -120,7 +139,9 @@ class _PostComposeScreenState extends ConsumerState<PostComposeScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
             child: FilledButton(
-              onPressed: _submitting ? null : _submit,
+              onPressed: (_submitting || !roleReady || !kindAllowed)
+                  ? null
+                  : _submit,
               style: FilledButton.styleFrom(
                 backgroundColor: AppPalette.navSelected,
                 foregroundColor: Colors.white,
