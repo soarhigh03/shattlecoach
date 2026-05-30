@@ -216,7 +216,7 @@ class _SessionList extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const _SkeletonList(),
       error: (e, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -465,6 +465,128 @@ class _SecondaryButton extends StatelessWidget {
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
       ),
       child: Text(label),
+    );
+  }
+}
+
+class _SkeletonList extends StatefulWidget {
+  const _SkeletonList();
+
+  @override
+  State<_SkeletonList> createState() => _SkeletonListState();
+}
+
+class _SkeletonListState extends State<_SkeletonList>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 2,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (_, _) => _SkeletonCard(pulse: _pulse),
+    );
+  }
+}
+
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard({required this.pulse});
+  final Animation<double> pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _SkeletonBox(pulse: pulse, width: 110, height: 18),
+              const Spacer(),
+              _SkeletonBox(pulse: pulse, width: 36, height: 14),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _SkeletonBox(pulse: pulse, width: 150, height: 14),
+          const SizedBox(height: 8),
+          _SkeletonBox(pulse: pulse, width: 200, height: 14),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _SkeletonBox(
+                  pulse: pulse,
+                  width: double.infinity,
+                  height: 44,
+                  radius: 10,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _SkeletonBox(
+                  pulse: pulse,
+                  width: double.infinity,
+                  height: 44,
+                  radius: 10,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  const _SkeletonBox({
+    required this.pulse,
+    required this.width,
+    required this.height,
+    this.radius = 4,
+  });
+
+  final Animation<double> pulse;
+  final double width;
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedBuilder(
+      animation: pulse,
+      builder: (_, _) {
+        final base = theme.colorScheme.surfaceContainerHighest;
+        final highlight = theme.colorScheme.surface;
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: Color.lerp(base, highlight, pulse.value * 0.6),
+            borderRadius: BorderRadius.circular(radius),
+          ),
+        );
+      },
     );
   }
 }
