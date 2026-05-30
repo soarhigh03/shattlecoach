@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// ## 디자인 스펙
 /// - 배경 오버레이: 검정 30% (`Colors.black.withValues(alpha: 0.3)`).
 /// - 팝업 본체: 흰색(테마 surface) 둥근 모서리, `blurRadius: 10` 그림자.
-/// - 타이틀: 세미볼드(`FontWeight.w600`) 17pt, 가운데 정렬.
+/// - 타이틀 영역: 검정 배경 + 흰 글씨, 세미볼드(`FontWeight.w600`) 17pt, 가운데 정렬.
 /// - 본문: 미디움(`FontWeight.w500`) 15pt, 가운데 정렬. 본문 안의 [Text] 위젯은
 ///   별도 스타일을 지정하지 않아도 이 값이 기본으로 적용된다 (DefaultTextStyle 머지).
 ///
@@ -52,26 +52,33 @@ class AppDialog extends StatelessWidget {
               ),
             ],
           ),
+          clipBehavior: Clip.antiAlias,
           child: Material(
             type: MaterialType.transparency,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (title != null) ...[
-                    Text(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (title != null)
+                  Container(
+                    color: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    child: Text(
                       title!,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                  ],
-                  DefaultTextStyle.merge(
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                  child: DefaultTextStyle.merge(
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -79,8 +86,8 @@ class AppDialog extends StatelessWidget {
                     textAlign: TextAlign.center,
                     child: child,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

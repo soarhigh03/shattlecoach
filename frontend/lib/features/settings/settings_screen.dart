@@ -264,6 +264,7 @@ class _ExecCodeFormState extends State<_ExecCodeForm> {
           controller: _controller,
           autofocus: true,
           obscureText: true,
+          cursorColor: Colors.black,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
           decoration: InputDecoration(
