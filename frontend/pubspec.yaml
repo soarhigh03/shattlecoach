@@ -44,6 +44,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/logo/
     - .env
 
   # Pretendard variable font. The same file is referenced per weight so

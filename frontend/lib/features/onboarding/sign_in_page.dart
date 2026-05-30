@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../routing/app_router.dart';
 import '../../services/auth_service.dart';
 import '../../services/supabase_service.dart';
+import '../../widgets/app_logo.dart';
 
 class SignInPage extends ConsumerStatefulWidget {
   const SignInPage({super.key});
@@ -45,7 +46,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 24),
-          Icon(Icons.lock_outline, size: 56, color: theme.colorScheme.primary),
+          const Center(child: AppLogo(size: 128)),
           const SizedBox(height: 24),
           Text(
             'Google 계정으로 시작하기',
