@@ -1,0 +1,16 @@
+# ── Add these to frontend/pubspec.yaml ──────────────────────────────────────
+# (shared_preferences, image_picker are ALREADY in your pubspec — don't duplicate.)
+
+dependencies:
+  tflite_flutter: ^0.11.0   # MoveNet pose inference (INT8 model)
+  image: ^4.3.0             # JPEG decode inside the pose worker isolate
+  path_provider: ^2.1.4     # temp paths used by the pipeline
+
+flutter:
+  assets:
+    - assets/movenet_lightning_int8.tflite
+    - assets/bst_speed_percentiles.json
+    - assets/bst_step_percentiles.json
+    - assets/rule_calibration.json
+    - assets/stroke_axes.json
+    - assets/rulebook_tips.json

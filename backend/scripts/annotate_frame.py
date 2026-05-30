@@ -30,15 +30,30 @@ IDX = {n: i for i, n in enumerate(COCO_NAMES)}
 FONT_PATH = "C:/Windows/Fonts/malgun.ttf"
 
 
+def _edge_trim(n: int) -> tuple[int, int]:
+    """Valid [lo, hi) after excluding first/last ~12% of frames (min 2). (D4.)"""
+    m = max(2, (n * 12) // 100)
+    return (m, n - m) if (n - m) > m else (0, n)
+
+
 def find_impact_frame(kpts: np.ndarray) -> tuple[int, int]:
-    """Returns (frame_idx, wrist_idx) of peak wrist linear velocity."""
+    """Returns (frame_idx, wrist_idx) of peak wrist linear velocity.
+
+    D4 (review round 1): the racket-hand wrist (higher mean confidence) is used,
+    the speed profile is smoothed (3-tap moving average), and the GLOBAL maximum
+    is taken within an edge-trimmed range — so start-of-clip jitter / the first
+    minor peak is no longer mistaken for the impact."""
     lconf = kpts[:, IDX["left_wrist"], 2].mean()
     rconf = kpts[:, IDX["right_wrist"], 2].mean()
     wrist_idx = IDX["right_wrist"] if rconf >= lconf else IDX["left_wrist"]
     wrist_xy = kpts[:, wrist_idx, :2]
-    diffs = np.diff(wrist_xy, axis=0)
-    speeds = np.linalg.norm(diffs, axis=1)
-    return int(np.argmax(speeds)), wrist_idx
+    speeds = np.linalg.norm(np.diff(wrist_xy, axis=0), axis=1)
+    if speeds.size == 0:
+        return 0, wrist_idx
+    if speeds.size >= 3:
+        speeds = np.convolve(speeds, np.ones(3) / 3.0, mode="same")
+    lo, hi = _edge_trim(int(speeds.size))
+    return lo + int(np.argmax(speeds[lo:hi])), wrist_idx
 
 
 def _find_swing_peaks(kpts: np.ndarray, wrist_idx: int, min_distance: int = 15) -> list[int]:
@@ -48,14 +63,17 @@ def _find_swing_peaks(kpts: np.ndarray, wrist_idx: int, min_distance: int = 15) 
     speeds = np.linalg.norm(diffs, axis=1)
     if speeds.size == 0:
         return []
+    if speeds.size >= 3:
+        speeds = np.convolve(speeds, np.ones(3) / 3.0, mode="same")
     threshold = float(np.percentile(speeds, 75))
+    lo, hi = _edge_trim(int(speeds.size))  # D4: ignore start/end noise
     peaks: list[int] = []
-    for i in range(1, len(speeds) - 1):
+    for i in range(max(1, lo), min(len(speeds) - 1, hi)):
         if speeds[i] > threshold and speeds[i] >= speeds[i - 1] and speeds[i] >= speeds[i + 1]:
             if not peaks or i - peaks[-1] >= min_distance:
                 peaks.append(i)
     if not peaks:
-        peaks = [int(np.argmax(speeds))]
+        peaks = [lo + int(np.argmax(speeds[lo:hi]))]
     peaks.sort(key=lambda i: -speeds[i])
     return peaks
 
@@ -131,10 +149,19 @@ def criteria_to_corrections(
             out.append({"joint": "right_knee", "direction": (0, 90),
                         "label_ko": "무릎을 더 굽히기 ↓"})
             out.append({"joint": "left_knee", "direction": (0, 90), "label_ko": ""})
-        elif name == "head_stable":
-            out.append({"joint": "nose", "direction": (0, 0),
-                        "label_ko": "머리 흔들림 줄이기"})
     return out
+
+
+def _player_scale(kpts: np.ndarray, img_h: int) -> float:
+    """D5: scale markers/labels to the player's on-screen size. Full-court shots
+    (small player) get bigger relative markers so annotations stay legible."""
+    vis = kpts[kpts[:, 2] > 0.2]
+    if vis.shape[0] >= 2:
+        bbox_h = float(vis[:, 1].max() - vis[:, 1].min())
+    else:
+        bbox_h = img_h * 0.5
+    # reference player height ~420px → scale 1.0; clamp so it never vanishes/overflows
+    return float(np.clip(bbox_h / 420.0, 0.55, 2.4))
 
 
 def draw_annotations_pil(
@@ -146,7 +173,9 @@ def draw_annotations_pil(
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     pil = Image.fromarray(img_rgb)
     d = ImageDraw.Draw(pil)
-    font_label = ImageFont.truetype(FONT_PATH, 28)
+    s = _player_scale(kpts, pil.height)
+    r = max(10, int(28 * s)); lw = max(3, int(7 * s)); ah = max(10, int(22 * s))
+    font_label = ImageFont.truetype(FONT_PATH, max(15, int(26 * s)))
     font_title = ImageFont.truetype(FONT_PATH, 30)
     for c in corrections:
         joint = c["joint"]; dx, dy = c["direction"]; label = c["label_ko"]
@@ -156,23 +185,26 @@ def draw_annotations_pil(
         if conf < 0.2:
             continue
         cx, cy = int(x), int(y)
-        d.ellipse([cx - 28, cy - 28, cx + 28, cy + 28], outline=(230, 40, 40), width=5)
+        dx, dy = int(dx * s), int(dy * s)  # scale the correction vector too
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(230, 40, 40), width=max(3, int(5 * s)))
         if dx != 0 or dy != 0:
             ex, ey = cx + dx, cy + dy
-            d.line([(cx, cy), (ex, ey)], fill=(255, 200, 0), width=7)
+            d.line([(cx, cy), (ex, ey)], fill=(255, 200, 0), width=lw)
             ang = math.atan2(dy, dx)
             for off in (-0.4, 0.4):
-                hx = ex - 22 * math.cos(ang + off)
-                hy = ey - 22 * math.sin(ang + off)
-                d.line([(ex, ey), (hx, hy)], fill=(255, 200, 0), width=7)
+                hx = ex - ah * math.cos(ang + off)
+                hy = ey - ah * math.sin(ang + off)
+                d.line([(ex, ey), (hx, hy)], fill=(255, 200, 0), width=lw)
         if label:
-            tx = max(8, cx - 100); ty = min(pil.height - 50, cy + 40)
-            for offx in (-2, 2):
-                for offy in (-2, 2):
-                    d.text((tx + offx, ty + offy), label, font=font_label, fill=(255, 255, 255))
-            d.text((tx, ty), label, font=font_label, fill=(230, 40, 40))
+            bbox = d.textbbox((0, 0), label, font=font_label)
+            tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            tx = int(min(max(8, cx - tw // 2), pil.width - tw - 8))
+            ty = int(min(pil.height - th - 12, cy + r + 8))
+            # D5: solid background box for contrast against busy court backgrounds
+            d.rectangle([tx - 6, ty - 4, tx + tw + 6, ty + th + 8], fill=(20, 20, 20))
+            d.text((tx, ty), label, font=font_label, fill=(255, 90, 80))
     d.rectangle([(0, 0), (pil.width, 50)], fill=(180, 30, 30))
-    title = f"임팩트 자세 — 빨간 부분 수정"
+    title = "임팩트 자세 — 빨간 부분 수정"
     if stroke_label:
         title += f"  ({stroke_label})"
     d.text((16, 8), title, font=font_title, fill=(255, 255, 255))

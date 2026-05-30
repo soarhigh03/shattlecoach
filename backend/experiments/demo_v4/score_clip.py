@@ -76,11 +76,10 @@ def apply_stroke_axis_filter(payload: dict) -> dict:
     relevant = list(entry.get("axes", all_axes))
     reasons = dict(entry.get("reasons", {}))
     for axis in all_axes:
-        if axis in relevant:
-            continue
-        # Null the stars + record reason
-        payload[f"{axis}_stars"] = None
-        payload[f"{axis}_reason"] = reasons.get(axis, f"{axis} evaluation skipped for {label}")
+        # Dropped axes: omit *_stars/*_reason entirely (no N/A). Reason kept in axes_dropped.
+        if axis not in relevant:
+            payload.pop(f"{axis}_stars", None)
+        payload.pop(f"{axis}_reason", None)
     # Filter coaching tips to relevant axes only
     payload["coaching_tips"] = [t for t in payload.get("coaching_tips", []) if t.get("axis") in relevant]
     payload["axes_evaluated"] = relevant
@@ -96,8 +95,6 @@ COACHING_TIPS = {
                                    "Use more hip/torso rotation to drive the swing."),
     "knees_bent_at_prep":        ("준비 자세에서 무릎을 더 굽혀 낮은 스탠스를 유지하세요.",
                                    "Bend the knees more in the preparation stance."),
-    "head_stable":               ("머리를 조금 더 고정시키세요 (시선 흔들림 줄이기).",
-                                   "Keep the head steadier; reduce up-down motion of the gaze."),
 }
 
 SPEED_TIPS = {
@@ -211,6 +208,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--video", required=True)
     ap.add_argument("--out_dir", default=str(ROOT / "experiments" / "demo_v4" / "output"))
+    ap.add_argument("--stroke", default=None,
+                    choices=["high_clear", "short_serve", "forehand_drive"],
+                    help="User-selected stroke (점5). Bypasses the ST-GCN/OOD for scoring "
+                         "decisions: drives axis filter + per-class thresholds, restoring "
+                         "speed/step that OOD would otherwise drop (D1).")
     args = ap.parse_args()
     for p in (CKPT_V3, TEMP_JSON, OOD_NPZ):
         if not p.exists(): raise FileNotFoundError(p)
@@ -244,7 +246,21 @@ def main():
     stroke = classify(kpts)
     speed = ssp.score(kpts)
     step = sst.score(kpts)
-    posture = apply_per_class_thresholds(posture, stroke["label"], stroke["is_ood"],
+    # 점5/D1: a user-selected stroke is authoritative — keep the classifier output
+    # as a reference but bypass it (and OOD) for all scoring decisions.
+    if args.stroke:
+        stroke = {
+            **stroke,
+            "classifier_reference": {
+                "label": stroke.get("label"), "is_ood": stroke.get("is_ood"),
+                "top1_confidence": stroke.get("top1_confidence"),
+                "softmax_3class": stroke.get("softmax_3class"),
+                "mahalanobis_distance": stroke.get("mahalanobis_distance"),
+            },
+            "label": args.stroke, "is_ood": False, "source": "user_selected",
+        }
+    scoring_label = stroke["label"]
+    posture = apply_per_class_thresholds(posture, scoring_label, stroke["is_ood"],
                                           stroke["mahalanobis_distance"] / max(stroke["ood_threshold_95"], 1e-9))
 
     valid_probs = [c["probability"] for c in posture["criteria"] if c.get("measurement") is not None]
@@ -305,6 +321,8 @@ def main():
             "mahalanobis_distance": stroke["mahalanobis_distance"],
             "available_strokes": POSTER_CLASSES + ["unknown_ood"],
             "note": "low_clear removed in v4 — kept as 3-stroke output until shuttle tracking added in v1",
+            **({"source": stroke["source"], "classifier_reference": stroke["classifier_reference"]}
+               if stroke.get("source") == "user_selected" else {}),
         },
         # 3-axis scores
         "posture_stars": posture_stars,

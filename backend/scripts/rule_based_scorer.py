@@ -45,8 +45,7 @@ CRITERIA_NAMES = [
     "elbow_extension_>=160deg",
     "hip_rotation_>=20deg",
     "knees_bent_at_prep",
-    "head_stable",
-]
+]  # head_stable (C5) removed 2026-05-31 — noisy nose_y std, low coaching value
 
 
 def temporal_median(kpts: np.ndarray, window: int = 5) -> np.ndarray:
@@ -106,10 +105,20 @@ def _sigmoid_margin(measurement: float, threshold: float, scale: float,
     return float(1.0 / (1.0 + math.exp(-x)))
 
 
+def _edge_trim(n: int) -> tuple[int, int]:
+    """Valid [lo, hi) range after excluding the first/last ~12% of frames (min 2).
+    Start/end frames are often pose noise; the swing impact is never there.
+    Falls back to the full range for very short clips. (D4 — review round 1.)"""
+    m = max(2, (n * 12) // 100)
+    return (m, n - m) if (n - m) > m else (0, n)
+
+
 def detect_impact_frame(kpts: np.ndarray, dom_wrist: str) -> int:
-    """Frame where the dominant wrist y is at its lowest pixel-y (= highest in image)."""
+    """Frame where the dominant wrist y is at its lowest pixel-y (= highest in image),
+    searched within the edge-trimmed range so start/end noise isn't mistaken for impact."""
     wrist_y = kpts[:, IDX[f"{dom_wrist}_wrist"], 1]
-    return int(np.argmin(wrist_y))  # smaller y == higher in image
+    lo, hi = _edge_trim(int(wrist_y.shape[0]))
+    return lo + int(np.argmin(wrist_y[lo:hi]))  # smaller y == higher in image
 
 
 def _prep_frame(n_frames: int) -> int:
@@ -221,24 +230,6 @@ def score(kpts: np.ndarray, smooth_window: int = 5, min_joint_conf: float = 0.3)
             "threshold": threshold_c4, "probability": prob_c4,
         })
 
-    # C5: head_stable. nose_y std across all frames < 0.06 * body_scale.
-    # 0.06 is chosen to match the synth label generator's hard threshold of
-    # "std < 6 px" given the synth body_scale of ~96 px. Tweak per camera
-    # distance during per-user calibration.
-    nose_y_std = float(np.std(sm[:, IDX["nose"], 1]))
-    nose_y_std_norm = nose_y_std / max(body, 1e-6)
-    threshold_c5 = 0.06
-    passed_c5 = nose_y_std_norm < threshold_c5
-    prob_c5 = _sigmoid_margin(nose_y_std_norm, threshold_c5, scale=0.03, direction="<")
-    results.append({
-        "name": CRITERIA_NAMES[4],
-        "pass": bool(passed_c5),
-        "measurement": nose_y_std_norm,
-        "unit": "ratio_of_shoulder_hip",
-        "threshold": threshold_c5,
-        "probability": prob_c5,
-    })
-
     return {
         "criteria": results,
         "impact_frame": impact,
@@ -286,8 +277,9 @@ def _self_test() -> int:
         gt = L(P(), kpts)
         rule = score(kpts.astype(np.float32), smooth_window=1)
         rule_calls = np.array([int(c["pass"]) for c in rule["criteria"]], dtype=np.float32)
+        gt = np.asarray(gt)[:len(rule_calls)]  # C5 (head_stable) dropped — compare first 4
         agree = int((rule_calls == gt).sum())
-        status = "OK" if agree >= 4 else "FAIL"
+        status = "OK" if agree >= 3 else "FAIL"
         print(f"[{status}] {name:25s}  gt={gt.tolist()}  rules={rule_calls.tolist()}  "
               f"(impact_f={rule['impact_frame']}/{rule['n_frames']}, "
               f"body={rule['body_scale']:.1f}, dom={rule['dominant_arm']})")

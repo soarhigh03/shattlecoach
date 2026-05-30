@@ -20,11 +20,6 @@
         "threshold": 153.86239932573815,
         "direction": "<",
         "note": "pass if measurement < threshold (= class's 75th pctile)"
-      },
-      "head_stable": {
-        "threshold": 0.28735182282976124,
-        "direction": "<",
-        "note": "pass if measurement < threshold (= class's 75th pctile)"
       }
     },
     "short_serve": {
@@ -45,11 +40,6 @@
       },
       "knees_bent_at_prep": {
         "threshold": 174.32280926216666,
-        "direction": "<",
-        "note": "pass if measurement < threshold (= class's 75th pctile)"
-      },
-      "head_stable": {
-        "threshold": 0.05328390354412716,
         "direction": "<",
         "note": "pass if measurement < threshold (= class's 75th pctile)"
       }
@@ -74,11 +64,6 @@
         "threshold": 171.07601647200778,
         "direction": "<",
         "note": "pass if measurement < threshold (= class's 75th pctile)"
-      },
-      "head_stable": {
-        "threshold": 0.14385559057961156,
-        "direction": "<",
-        "note": "pass if measurement < threshold (= class's 75th pctile)"
       }
     }
   },
@@ -97,10 +82,6 @@
     },
     "knees_bent_at_prep": {
       "threshold": 171.07601647200778,
-      "direction": "<"
-    },
-    "head_stable": {
-      "threshold": 0.14385559057961156,
       "direction": "<"
     }
   },
@@ -141,15 +122,6 @@
         "p75": 153.86239932573815,
         "max": 179.9662791873169,
         "mean": 137.02654487078655
-      },
-      "head_stable": {
-        "n": 1871,
-        "min": 0.0,
-        "p25": 0.1023196747753489,
-        "median": 0.17779071242180688,
-        "p75": 0.28735182282976124,
-        "max": 5.353901144616772,
-        "mean": 0.3710852656828955
       }
     },
     "short_serve": {
@@ -188,15 +160,6 @@
         "p75": 174.32280926216666,
         "max": 179.9868093558452,
         "mean": 153.31334382366524
-      },
-      "head_stable": {
-        "n": 1496,
-        "min": 0.0,
-        "p25": 0.01845842271784997,
-        "median": 0.030349147015058295,
-        "p75": 0.05328390354412716,
-        "max": 6.604179174639834,
-        "mean": 0.21734317966945446
       }
     },
     "forehand_drive": {
@@ -235,15 +198,6 @@
         "p75": 171.07601647200778,
         "max": 179.9856298509986,
         "mean": 148.83366994005902
-      },
-      "head_stable": {
-        "n": 1143,
-        "min": 0.0,
-        "p25": 0.07793677533628364,
-        "median": 0.1052310530123441,
-        "p75": 0.14385559057961156,
-        "max": 3.9969151156625,
-        "mean": 0.1627134247517254
       }
     }
   },

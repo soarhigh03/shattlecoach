@@ -37,9 +37,21 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request
 
+from rulebook import (
+    compose_fallback,
+    forbidden_keywords,
+    introduced_forbidden,
+    load_rulebook,
+    select_positives,
+    select_sentences,
+)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCORE_CLIP = ROOT / "experiments" / "demo_v4" / "score_clip.py"
+STROKE_AXES = ROOT / "scripts" / "stroke_axes.json"
 PY = sys.executable
+
+VALID_STROKES = {"high_clear", "short_serve", "forehand_drive"}
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("score_server")
@@ -52,79 +64,99 @@ GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama-3.1-8b-instant"
 
 
-def _call_groq(score: dict, timeout_s: float = 8.0) -> dict:
-    """Returns {'paragraph': '...', 'latency_ms': N, 'model': 'llama-3.1-8b-instant'}
-    OR {'skipped': True, 'reason': '...'} if API key missing / call fails.
+_ALL_AXES = ["posture", "speed", "step"]
+_AXIS_KO = {"posture": "자세", "speed": "속도/스윙 스피드", "step": "스텝/풋워크"}
 
-    Sends ONLY the score JSON (no video, no skeleton coordinates) — privacy-safe.
-    """
+
+def _apply_stroke_axis_filter(payload: dict) -> dict:
+    """Local re-implementation of score_clip.apply_stroke_axis_filter so the server
+    can re-filter after a user stroke override WITHOUT importing the torch/cv2-heavy
+    score_clip module. Behaviour must match scripts/stroke_axes.json semantics and
+    flutter_app/lib/axis_filter.dart."""
+    try:
+        cfg = json.loads(STROKE_AXES.read_text(encoding="utf-8"))
+    except Exception:
+        cfg = {}
+    label = (payload.get("stroke") or {}).get("label") or ""
+    entry = cfg.get(label) or cfg.get("unknown_ood") or {"axes": _ALL_AXES, "reasons": {}}
+    relevant = list(entry.get("axes", _ALL_AXES))
+    reasons = {k: str(v) for k, v in (entry.get("reasons") or {}).items()}
+    for axis in _ALL_AXES:
+        # Dropped axes: omit *_stars/*_reason entirely (no N/A). Reason kept in axes_dropped.
+        if axis not in relevant:
+            payload.pop(f"{axis}_stars", None)
+        payload.pop(f"{axis}_reason", None)
+    payload["coaching_tips"] = [
+        t for t in payload.get("coaching_tips", []) if t.get("axis") in relevant
+    ]
+    payload["axes_evaluated"] = relevant
+    payload["axes_dropped"] = {
+        a: reasons.get(a, f"{a} not relevant for {label}")
+        for a in _ALL_AXES if a not in relevant
+    }
+    return payload
+
+
+def _maybe_override_stroke(payload: dict, override: str) -> dict:
+    """If the user explicitly picked a stroke, make it authoritative: stash the
+    classifier output under stroke.classifier_reference (kept for transparency)
+    and re-run the axis filter for the chosen stroke. The ST-GCN/OOD result is
+    thus bypassed for scoring decisions (점5)."""
+    override = (override or "").strip()
+    if override not in VALID_STROKES:
+        return payload  # no/invalid override → keep classifier label
+    stroke = payload.get("stroke") or {}
+    if stroke.get("label") != override:
+        stroke["classifier_reference"] = {
+            "label": stroke.get("label"),
+            "top1_confidence": stroke.get("top1_confidence"),
+            "softmax_3class": stroke.get("softmax_3class"),
+            "is_ood": stroke.get("is_ood"),
+        }
+        stroke["label"] = override
+        stroke["source"] = "user_selected"
+        payload["stroke"] = stroke
+        _apply_stroke_axis_filter(payload)
+    else:
+        stroke["source"] = "user_selected"
+        payload["stroke"] = stroke
+    return payload
+
+
+def _smooth_with_groq(sentences: list, fallback: str, forbidden: list,
+                      timeout_s: float = 8.0) -> dict:
+    """Ask Groq to ONLY stitch the already-selected rulebook sentences into one
+    natural paragraph — no free generation, no new advice/numbers. Returns
+    {'paragraph': ...} on success or {'skipped': True, 'reason': ...}."""
     key = os.environ.get("GROQ_API_KEY", "").strip()
     if not key:
         return {"skipped": True, "reason": "GROQ_API_KEY env var not set"}
-    stroke = score.get("stroke", {})
-    axes_evaluated = score.get("axes_evaluated", ["posture", "speed", "step"])
-    axes_dropped = score.get("axes_dropped", {})
-    # tips were already filtered upstream by score_clip.apply_stroke_axis_filter
-    tips = [t for t in score.get("coaching_tips", []) if t.get("axis") in axes_evaluated]
-    if not tips:
-        return {"skipped": True, "reason": "no rule-based tips to expand"}
-    measurements = []
-    for c in score.get("posture_criteria", []):
-        m = c.get("measurement")
-        if m is None:
-            measurements.append(f"- {c.get('name')}: 측정 불가 (관절 인식 실패)")
-        else:
-            passed = "✓통과" if c.get("pass") else "✗실패"
-            measurements.append(
-                f"- {c.get('name')}: {m:.2f} {c.get('unit', '')} "
-                f"(임계값 {c.get('threshold', '?')}, {passed})"
-            )
-    fail_lines = "\n".join(
-        f"- [{t.get('axis')}] {t.get('tip_ko')}" for t in tips
-    )
-    star_lines = []
-    if "posture" in axes_evaluated:
-        star_lines.append(f"- 자세 별점: {score.get('posture_stars', '?')}/5")
-    if "speed" in axes_evaluated:
-        star_lines.append(f"- 속도 별점: {score.get('speed_stars', '?')}/5")
-    if "step" in axes_evaluated:
-        star_lines.append(f"- 스텝 별점: {score.get('step_stars', '?')}/5")
-    # GUARDRAIL — explicit forbidden axes with reasons
-    if axes_dropped:
-        forbidden_axis_ko = {"posture": "자세", "speed": "속도/스윙 스피드", "step": "스텝/풋워크"}
-        forbidden_lines = "\n".join(
-            f"- {forbidden_axis_ko.get(a, a)} ({reason})" for a, reason in axes_dropped.items()
-        )
-        guardrail = (
-            "\n중요: 아래 축은 이 스트로크에 무관하므로 절대 언급하지 마라 "
-            "(언급하면 잘못된 조언이 됨):\n" + forbidden_lines + "\n"
-        )
-    else:
-        guardrail = ""
-    prompt = f"""너는 한국어 배드민턴 코치다. 짧고 친근한 톤으로 2-3문장의 조언을 해라.
-존댓말, 100자 이내. 측정값을 1-2개 인용해서 구체적으로.
+    if not sentences:
+        return {"skipped": True, "reason": "no rulebook sentences to stitch"}
+    bullet_lines = "\n".join(f"- {s['text']}" for s in sentences)
+    forbid_block = ""
+    if forbidden:
+        forbid_block = ("절대 사용하면 안 되는 표현(이 단어가 들어가면 잘못된 조언이 됨): "
+                        + ", ".join(forbidden) + "\n")
+    prompt = f"""너는 한국어 배드민턴 코치의 말을 다듬는 편집자다.
+아래 '코칭 문장'들은 규칙 기반 분석이 이미 선택한 조언이다.
+규칙:
+1. 문장들의 의미를 절대 바꾸지 마라.
+2. 새로운 조언·숫자·측정값·칭찬을 추가하지 마라. 주어진 내용만 사용해라.
+3. 존댓말로, 자연스럽게 이어지는 한 단락(2~4문장)으로만 연결해라.
+{forbid_block}코칭 문장:
+{bullet_lines}
 
-분석 결과:
-- 예측 스트로크: {stroke.get('label', '?')} (확신도 {stroke.get('top1_confidence', 0):.2f})
-{chr(10).join(star_lines)}
-{guardrail}
-5개 기준 측정값:
-{chr(10).join(measurements)}
-
-실패 항목과 룰북 조언:
-{fail_lines}
-
-위를 참고해서 자연스러운 한국어 한 단락으로 코칭해라. 측정값 1-2개 언급 필수.
-"""
-    payload = {
+다듬은 한 단락만 출력해라(설명·머리말 없이)."""
+    body = {
         "model": GROQ_MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": 200,
-        "temperature": 0.4,
+        "temperature": 0.3,
     }
     req = urllib.request.Request(
         GROQ_URL,
-        data=json.dumps(payload).encode("utf-8"),
+        data=json.dumps(body).encode("utf-8"),
         headers={
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
@@ -137,18 +169,56 @@ def _call_groq(score: dict, timeout_s: float = 8.0) -> dict:
         with urllib.request.urlopen(req, timeout=timeout_s) as resp:
             raw = resp.read().decode("utf-8")
         elapsed_ms = int((time.perf_counter() - t0) * 1000)
-        body = json.loads(raw)
-        paragraph = body["choices"][0]["message"]["content"].strip()
+        rbody = json.loads(raw)
+        paragraph = rbody["choices"][0]["message"]["content"].strip()
         return {
             "paragraph": paragraph,
             "latency_ms": elapsed_ms,
             "model": GROQ_MODEL,
-            "tokens_used": body.get("usage", {}),
+            "tokens_used": rbody.get("usage", {}),
         }
     except urllib.error.HTTPError as e:
         return {"skipped": True, "reason": f"Groq HTTP {e.code}: {e.reason}"}
     except Exception as e:
         return {"skipped": True, "reason": f"Groq call failed: {type(e).__name__}: {e}"}
+
+
+def _compose_coaching(score: dict) -> dict:
+    """Rulebook-grounded coaching. Selects bank sentences (deterministic), then
+    EITHER stitches them via the LLM OR falls back to the verbatim join. The final
+    paragraph is always grounded in the bank — the LLM never adds content.
+
+    Returns {'sentences', 'paragraph', 'paragraph_fallback', 'source', 'llm'}.
+    """
+    rulebook = load_rulebook()
+    stroke = (score.get("stroke") or {}).get("label") or "unknown_ood"
+    sentences = select_sentences(score, rulebook)
+    fallback = compose_fallback(sentences)
+    forbidden = forbidden_keywords(rulebook, stroke)
+    # Only forbid tokens the source DOESN'T already (correctly) use — B's fix_ko
+    # negate some forbidden tokens, which is fine; we only stop the LLM adding new ones.
+    prompt_forbidden = [k for k in forbidden if k not in fallback]
+
+    llm = _smooth_with_groq(sentences, fallback, prompt_forbidden)
+    paragraph, source = fallback, "fallback"
+    if llm.get("paragraph"):
+        smoothed = llm["paragraph"]
+        introduced = introduced_forbidden(smoothed, fallback, forbidden)
+        if introduced:
+            # LLM introduced a forbidden token beyond the source → discard, use bank join.
+            llm = {"skipped": True,
+                   "reason": f"smoothed output introduced forbidden keyword '{introduced[0]}'; used fallback",
+                   "discarded_paragraph": smoothed}
+        else:
+            paragraph, source = smoothed, "llm"
+    return {
+        "sentences": sentences,
+        "positives": select_positives(score, rulebook),
+        "paragraph": paragraph,
+        "paragraph_fallback": fallback,
+        "source": source,
+        "llm": llm,
+    }
 
 
 @app.route("/health", methods=["GET"])
@@ -206,12 +276,20 @@ def score():
     payload["server_processing_seconds"] = round(elapsed, 3)
     payload["request_id"] = request_id
 
-    # v1: Groq LLM augmentation (optional, skip if no API key or empty tips)
-    payload["llm"] = _call_groq(payload)
-    if payload["llm"].get("paragraph"):
-        log.info(f"[{request_id}] LLM paragraph: {payload['llm']['latency_ms']}ms")
+    # 점5: honour a user-selected stroke (bypass classifier for scoring decisions).
+    override = request.form.get("stroke", "")
+    payload = _maybe_override_stroke(payload, override)
+    if payload.get("stroke", {}).get("source") == "user_selected":
+        log.info(f"[{request_id}] stroke overridden by user -> {payload['stroke']['label']}")
+
+    # 점6: rulebook-grounded coaching (LLM stitches selected bank sentences; else fallback).
+    payload["rulebook"] = _compose_coaching(payload)
+    # Backward-compat: keep payload['llm'] for the existing UI block.
+    payload["llm"] = payload["rulebook"]["llm"]
+    if payload["rulebook"]["source"] == "llm":
+        log.info(f"[{request_id}] coaching: LLM-stitched {payload['llm'].get('latency_ms')}ms")
     else:
-        log.info(f"[{request_id}] LLM skipped: {payload['llm'].get('reason')}")
+        log.info(f"[{request_id}] coaching: deterministic fallback ({payload['llm'].get('reason')})")
 
     # Cleanup older request dirs (best-effort)
     try:
