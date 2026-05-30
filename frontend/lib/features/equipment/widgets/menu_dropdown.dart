@@ -28,7 +28,9 @@ Future<void> showMenuDropdown({
   final anchorTopLeft = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
   final anchorSize = renderBox.size;
 
-  final right = overlay.size.width - (anchorTopLeft.dx + anchorSize.width);
+  const edgeInset = 12.0;
+  final right =
+      overlay.size.width - (anchorTopLeft.dx + anchorSize.width) + edgeInset;
   final top = anchorTopLeft.dy + anchorSize.height + 4;
 
   final selected = await showGeneralDialog<int>(
@@ -46,21 +48,22 @@ Future<void> showMenuDropdown({
             right: right,
             child: Material(
               color: Colors.transparent,
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 132),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
+              child: IntrinsicWidth(
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 132),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -94,6 +97,7 @@ Future<void> showMenuDropdown({
                       ),
                   ],
                 ),
+              ),
               ),
             ),
           ),
