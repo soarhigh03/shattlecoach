@@ -13,6 +13,8 @@ class SignOutPage extends ConsumerWidget {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
+        titleTextStyle: theme.appBarTheme.titleTextStyle?.copyWith(fontSize: 17),
         title: const Text('로그아웃 및 탈퇴'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),

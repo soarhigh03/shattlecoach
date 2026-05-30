@@ -50,11 +50,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _SettingsTile(
               label: '오픈소스 라이선스',
-              onTap: () => showLicensePage(
-                context: context,
-                applicationName: 'Shattlecoach',
-                applicationVersion: _appVersion,
-              ),
+              onTap: () => context.push(AppRoute.settingsLicenses),
             ),
             const _SectionDivider(),
             const _SectionHeader(text: '개발자 도구'),
