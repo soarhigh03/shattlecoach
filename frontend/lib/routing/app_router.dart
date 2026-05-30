@@ -11,7 +11,9 @@ import '../features/onboarding/sign_in_page.dart';
 import '../features/onboarding/welcome_page.dart';
 import '../features/report/report_screen.dart';
 import '../features/sessions/sessions_screen.dart';
+import '../features/settings/licenses_page.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/settings/sign_out_page.dart';
 import '../features/shell/home_shell.dart';
 import '../services/auth_service.dart';
 import '../services/onboarding_service.dart';
@@ -33,6 +35,8 @@ class AppRoute {
   static const sessions = '/home/sessions';
   static const equipment = '/home/equipment';
   static const settings = '/home/settings';
+  static const settingsSignOut = '/settings/sign-out';
+  static const settingsLicenses = '/settings/licenses';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -123,6 +127,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (_, _) => _noTransition(const SettingsScreen()),
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoute.settingsSignOut,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, _) => const SignOutPage(),
+      ),
+      GoRoute(
+        path: AppRoute.settingsLicenses,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, _) => const LicensesPage(),
       ),
     ],
   );
