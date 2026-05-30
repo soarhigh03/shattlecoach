@@ -253,12 +253,13 @@ class _ExecCodeFormState extends State<_ExecCodeForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text('이번 분기 임원진 코드를 입력하세요.'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         TextField(
           controller: _controller,
           autofocus: true,
@@ -266,9 +267,32 @@ class _ExecCodeFormState extends State<_ExecCodeForm> {
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
           decoration: InputDecoration(
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: _submit,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 16,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 44,
+              minHeight: 44,
+            ),
+            suffixIcon: InkResponse(
+              onTap: _submit,
+              radius: 22,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16, left: 8),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
           ),
         ),
