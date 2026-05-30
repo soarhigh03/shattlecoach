@@ -80,7 +80,10 @@ class SignOutPage extends ConsumerWidget {
     context.go(AppRoute.onboardingSignIn);
   }
 
-  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmDeleteAccount(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: '계정 탈퇴',
@@ -126,7 +129,10 @@ class SignOutPage extends ConsumerWidget {
       await container.read(authServiceProvider).deleteAccount();
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('탈퇴 실패: $e'), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text('탈퇴 실패: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }

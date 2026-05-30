@@ -20,12 +20,12 @@ class UserProfile {
   final String role;
 
   factory UserProfile.fromRow(Map<String, dynamic> row) => UserProfile(
-        id: row['id'] as String,
-        email: (row['email'] as String?) ?? '',
-        name: (row['name'] as String?) ?? '',
-        handedness: row['handedness'] as String?,
-        role: (row['role'] as String?) ?? 'member',
-      );
+    id: row['id'] as String,
+    email: (row['email'] as String?) ?? '',
+    name: (row['name'] as String?) ?? '',
+    handedness: row['handedness'] as String?,
+    role: (row['role'] as String?) ?? 'member',
+  );
 }
 
 class ProfileService {
@@ -55,11 +55,14 @@ class ProfileService {
     }
     final user = SupabaseBootstrap.client.auth.currentUser;
     if (user == null) throw StateError('Not signed in.');
-    await SupabaseBootstrap.client.from('profiles').update({
-      'name': name,
-      'handedness': handedness,
-      'onboarded_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', user.id);
+    await SupabaseBootstrap.client
+        .from('profiles')
+        .update({
+          'name': name,
+          'handedness': handedness,
+          'onboarded_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', user.id);
   }
 }
 

@@ -34,7 +34,9 @@ class _ProfileSetupPageState extends ConsumerState<ProfileSetupPage> {
   @override
   void initState() {
     super.initState();
-    _name = TextEditingController(text: ref.read(profileDraftProvider).displayName);
+    _name = TextEditingController(
+      text: ref.read(profileDraftProvider).displayName,
+    );
   }
 
   @override
@@ -49,16 +51,18 @@ class _ProfileSetupPageState extends ConsumerState<ProfileSetupPage> {
     final draft = ref.read(profileDraftProvider);
     draft.displayName = _name.text.trim();
     try {
-      await ref.read(profileServiceProvider).completeOnboarding(
+      await ref
+          .read(profileServiceProvider)
+          .completeOnboarding(
             name: draft.displayName,
             handedness: draft.hand == DominantHand.left ? 'left' : 'right',
           );
     } catch (e) {
       if (!mounted) return;
       setState(() => _finishing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('프로필 저장에 실패했어요: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('프로필 저장에 실패했어요: $e')));
       return;
     }
     await ref.read(onboardingServiceProvider).markCompleted();
@@ -78,9 +82,7 @@ class _ProfileSetupPageState extends ConsumerState<ProfileSetupPage> {
             child: DecoratedBox(
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: Colors.black, width: 2),
-                ),
+                border: Border(top: BorderSide(color: Colors.black, width: 2)),
               ),
               child: SafeArea(
                 top: false,
@@ -111,8 +113,8 @@ class _ProfileSetupPageState extends ConsumerState<ProfileSetupPage> {
                                 textInputAction: TextInputAction.done,
                                 validator: (v) =>
                                     (v == null || v.trim().isEmpty)
-                                        ? '이름을 입력해 주세요'
-                                        : null,
+                                    ? '이름을 입력해 주세요'
+                                    : null,
                               ),
                               const SizedBox(height: 24),
                               const _RequiredLabel(label: '주 사용 손'),
@@ -199,7 +201,10 @@ class _RequiredLabel extends StatelessWidget {
           ),
           const TextSpan(
             text: ' *',
-            style: TextStyle(color: Color(0xFFE91E63), fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: Color(0xFFE91E63),
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

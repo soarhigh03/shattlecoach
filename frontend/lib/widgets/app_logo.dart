@@ -20,12 +20,7 @@ class AppLogo extends StatelessWidget {
       shadowColor: Colors.black.withValues(alpha: 0.35),
       borderRadius: BorderRadius.circular(radius),
       clipBehavior: Clip.antiAlias,
-      child: Image.asset(
-        _asset,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-      ),
+      child: Image.asset(_asset, width: size, height: size, fit: BoxFit.cover),
     );
   }
 }
