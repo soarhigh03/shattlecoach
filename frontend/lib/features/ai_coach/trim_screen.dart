@@ -66,11 +66,7 @@ class _TrimScreenState extends State<TrimScreen> {
       Duration.zero,
       total - _minLen >= Duration.zero ? total - _minLen : Duration.zero,
     );
-    final end = _clamp(
-      widget.args.initialEnd ?? total,
-      start + _minLen,
-      total,
-    );
+    final end = _clamp(widget.args.initialEnd ?? total, start + _minLen, total);
     c.addListener(_onTick);
     setState(() {
       _controller = c;
@@ -345,10 +341,7 @@ class _RangeChip extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -519,9 +512,7 @@ class _TrimTrack extends StatelessWidget {
                   top: -4,
                   bottom: -4,
                   width: 2,
-                  child: IgnorePointer(
-                    child: Container(color: Colors.white),
-                  ),
+                  child: IgnorePointer(child: Container(color: Colors.white)),
                 ),
               // Left handle.
               Positioned(
@@ -570,9 +561,7 @@ class _Dim extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const IgnorePointer(
-      child: ColoredBox(color: Color(0x66000000)),
-    );
+    return const IgnorePointer(child: ColoredBox(color: Color(0x66000000)));
   }
 }
 

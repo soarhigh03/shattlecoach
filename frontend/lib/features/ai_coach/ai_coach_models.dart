@@ -22,8 +22,7 @@ class AiCoachAnalysis {
   final String? feedback;
 
   /// Calendar-bucket key (year/month/day at midnight) used by the heatmap.
-  DateTime get day =>
-      DateTime(createdAt.year, createdAt.month, createdAt.day);
+  DateTime get day => DateTime(createdAt.year, createdAt.month, createdAt.day);
 
   AiCoachAnalysis copyWith({File? outputVideo, String? feedback}) {
     return AiCoachAnalysis(

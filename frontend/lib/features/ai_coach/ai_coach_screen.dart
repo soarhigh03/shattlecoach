@@ -159,10 +159,7 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              _PickerBox(
-                controller: _inputController,
-                onTap: _pickVideo,
-              ),
+              _PickerBox(controller: _inputController, onTap: _pickVideo),
               if (_trimStart != null && _trimEnd != null) ...[
                 const SizedBox(height: 8),
                 _TrimRangeLabel(start: _trimStart!, end: _trimEnd!),
@@ -437,8 +434,9 @@ class _PrimaryButton extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: theme.colorScheme.onSurface,
         foregroundColor: theme.colorScheme.surface,
-        disabledBackgroundColor:
-            theme.colorScheme.onSurface.withValues(alpha: 0.35),
+        disabledBackgroundColor: theme.colorScheme.onSurface.withValues(
+          alpha: 0.35,
+        ),
         disabledForegroundColor: theme.colorScheme.surface,
         minimumSize: const Size.fromHeight(56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -477,10 +475,11 @@ class _SecondaryButton extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: theme.colorScheme.surfaceContainerHighest,
         foregroundColor: theme.colorScheme.onSurface,
-        disabledBackgroundColor:
-            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-        disabledForegroundColor:
-            theme.colorScheme.onSurface.withValues(alpha: 0.4),
+        disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest
+            .withValues(alpha: 0.6),
+        disabledForegroundColor: theme.colorScheme.onSurface.withValues(
+          alpha: 0.4,
+        ),
         minimumSize: const Size.fromHeight(56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -502,11 +501,7 @@ class _TrimRangeLabel extends StatelessWidget {
     final len = end - start;
     return Row(
       children: [
-        Icon(
-          Icons.content_cut,
-          size: 14,
-          color: theme.colorScheme.primary,
-        ),
+        Icon(Icons.content_cut, size: 14, color: theme.colorScheme.primary),
         const SizedBox(width: 6),
         Text(
           '${_fmt(start)} → ${_fmt(end)}',

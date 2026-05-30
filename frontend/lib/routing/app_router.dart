@@ -151,9 +151,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final args = state.extra;
           if (args is! TrimScreenArgs) {
-            return const Scaffold(
-              body: Center(child: Text('잘못된 접근이에요.')),
-            );
+            return const Scaffold(body: Center(child: Text('잘못된 접근이에요.')));
           }
           return TrimScreen(args: args);
         },

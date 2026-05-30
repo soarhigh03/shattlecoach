@@ -26,8 +26,9 @@ final analysesProvider =
 
 /// Analyses grouped by calendar day. Used by the report heatmap and the
 /// per-day detail panel.
-final analysesByDayProvider =
-    Provider<Map<DateTime, List<AiCoachAnalysis>>>((ref) {
+final analysesByDayProvider = Provider<Map<DateTime, List<AiCoachAnalysis>>>((
+  ref,
+) {
   final all = ref.watch(analysesProvider);
   final map = <DateTime, List<AiCoachAnalysis>>{};
   for (final a in all) {

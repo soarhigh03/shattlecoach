@@ -66,7 +66,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               const SizedBox(height: 12),
               _HeatmapCalendar(
                 month: _month,
-                countsByDay: {for (final e in byDay.entries) e.key: e.value.length},
+                countsByDay: {
+                  for (final e in byDay.entries) e.key: e.value.length,
+                },
                 selected: _selected,
                 onSelectDay: (d) {
                   setState(() {
@@ -77,10 +79,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               const SizedBox(height: 20),
               _ColorLegend(),
               const SizedBox(height: 28),
-              _DetailPanel(
-                selected: _selected,
-                analyses: selectedAnalyses,
-              ),
+              _DetailPanel(selected: _selected, analyses: selectedAnalyses),
             ],
           ),
         ),
@@ -165,7 +164,9 @@ class _HeatmapCalendar extends StatelessWidget {
           Row(
             children: [
               for (var c = 0; c < 7; c++)
-                Expanded(child: _buildCell(context, r * 7 + c, leading, daysInMonth)),
+                Expanded(
+                  child: _buildCell(context, r * 7 + c, leading, daysInMonth),
+                ),
             ],
           ),
           if (r != rows - 1) const SizedBox(height: 6),
@@ -190,9 +191,7 @@ class _HeatmapCalendar extends StatelessWidget {
 
     final theme = Theme.of(context);
     final bg = _bgForCount(count);
-    final fg = count >= 3
-        ? Colors.white
-        : theme.colorScheme.onSurface;
+    final fg = count >= 3 ? Colors.white : theme.colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.all(2),
@@ -208,10 +207,7 @@ class _HeatmapCalendar extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 border: isSelected
-                    ? Border.all(
-                        color: theme.colorScheme.onSurface,
-                        width: 2,
-                      )
+                    ? Border.all(color: theme.colorScheme.onSurface, width: 2)
                     : Border.all(
                         color: theme.colorScheme.outlineVariant,
                         width: count == 0 ? 1 : 0,
@@ -447,8 +443,7 @@ class _AnalysisCardState extends State<_AnalysisCard> {
     final theme = Theme.of(context);
     final a = widget.analysis;
     final feedback = a.feedback;
-    final time =
-        '${_pad(a.createdAt.hour)}:${_pad(a.createdAt.minute)}';
+    final time = '${_pad(a.createdAt.hour)}:${_pad(a.createdAt.minute)}';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
@@ -512,8 +507,7 @@ class _AnalysisCardState extends State<_AnalysisCard> {
                         child: SizedBox(
                           width: 22,
                           height: 22,
-                          child:
-                              CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       ),
               ),
