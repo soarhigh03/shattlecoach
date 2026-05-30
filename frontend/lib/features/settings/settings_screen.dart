@@ -216,8 +216,8 @@ class _SettingsTile extends StatelessWidget {
               child: Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
