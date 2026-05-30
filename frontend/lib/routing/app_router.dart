@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../features/ai_coach/ai_coach_screen.dart';
 import '../features/equipment/equipment_screen.dart';
+import '../features/equipment/post_compose_screen.dart';
+import '../features/equipment/post_detail_screen.dart';
+import '../features/equipment/post_models.dart';
 import '../features/onboarding/onboarding_flow.dart';
 import '../features/onboarding/permission_primers_page.dart';
 import '../features/onboarding/profile_setup_page.dart';
@@ -34,6 +37,8 @@ class AppRoute {
   static const report = '/home/report';
   static const sessions = '/home/sessions';
   static const equipment = '/home/equipment';
+  static const equipmentCompose = '/home/equipment/compose';
+  static String equipmentDetail(String id) => '/home/equipment/$id';
   static const settings = '/home/settings';
   static const settingsSignOut = '/settings/sign-out';
   static const settingsLicenses = '/settings/licenses';
@@ -137,6 +142,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoute.settingsLicenses,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (_, _) => const LicensesPage(),
+      ),
+      GoRoute(
+        path: AppRoute.equipmentCompose,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is Post) {
+            return PostComposeScreen(editing: extra);
+          }
+          return PostComposeScreen(
+            initialKind: extra is PostKind ? extra : null,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/home/equipment/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, state) =>
+            PostDetailScreen(postId: state.pathParameters['id']!),
       ),
     ],
   );

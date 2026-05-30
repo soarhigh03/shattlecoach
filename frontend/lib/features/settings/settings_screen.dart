@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/onboarding_service.dart';
 import '../../services/supabase_service.dart';
 import '../../widgets/app_dialog.dart';
+import '../equipment/post_providers.dart';
 
 const String _appVersion = '0.1.0';
 
@@ -34,7 +35,7 @@ class SettingsScreen extends ConsumerWidget {
             const _SectionHeader(text: '계정 정보'),
             _SettingsTile(
               label: '임원진 등록하기',
-              onTap: () => _openExecCodeDialog(context),
+              onTap: () => _openExecCodeDialog(context, ref),
             ),
             _SettingsTile(
               label: '로그아웃 및 탈퇴',
@@ -68,7 +69,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _openExecCodeDialog(BuildContext context) async {
+  Future<void> _openExecCodeDialog(BuildContext context, WidgetRef ref) async {
     final code = await showAppDialog<String>(
       context: context,
       title: '임원진 등록하기',
@@ -78,9 +79,7 @@ class SettingsScreen extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
 
     if (!SupabaseBootstrap.isInitialized) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('로그인이 필요합니다.')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
       return;
     }
 
@@ -91,13 +90,12 @@ class SettingsScreen extends ConsumerWidget {
       );
       if (!context.mounted) return;
       if (ok == true) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('임원진으로 등록되었습니다.')),
-        );
+        // Role was just promoted in the DB; refresh the cached role flag so
+        // gates like the 공식 공동구매 chip flip on without a restart.
+        ref.invalidate(isExecutiveProvider);
+        messenger.showSnackBar(const SnackBar(content: Text('임원진으로 등록되었습니다.')));
       } else {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('잘못된 코드입니다.')),
-        );
+        messenger.showSnackBar(const SnackBar(content: Text('잘못된 코드입니다.')));
       }
     } catch (_) {
       if (!context.mounted) return;
