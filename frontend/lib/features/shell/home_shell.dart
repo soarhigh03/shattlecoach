@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../routing/app_router.dart';
@@ -13,33 +14,33 @@ class HomeShell extends StatelessWidget {
   static const _tabs = <_NavTab>[
     _NavTab(
       route: AppRoute.aiCoach,
-      label: 'AI Coach',
-      icon: Icons.sports_tennis_outlined,
-      selectedIcon: Icons.sports_tennis,
+      label: 'AI코치',
+      icon: _SvgIcon('assets/icons/badminton-player.svg'),
+      selectedIcon: _SvgIcon('assets/icons/badminton-player.svg', selected: true),
     ),
     _NavTab(
       route: AppRoute.report,
-      label: 'Report',
-      icon: Icons.bar_chart_outlined,
-      selectedIcon: Icons.bar_chart,
+      label: '리포트',
+      icon: Icon(Icons.bar_chart_outlined),
+      selectedIcon: Icon(Icons.bar_chart),
     ),
     _NavTab(
       route: AppRoute.sessions,
       label: '운동 신청',
-      icon: Icons.event_available_outlined,
-      selectedIcon: Icons.event_available,
+      icon: Icon(Icons.event_available_outlined),
+      selectedIcon: Icon(Icons.event_available),
     ),
     _NavTab(
       route: AppRoute.equipment,
       label: '장비 공구',
-      icon: Icons.shopping_bag_outlined,
-      selectedIcon: Icons.shopping_bag,
+      icon: _SvgIcon('assets/icons/shuttlecock.svg'),
+      selectedIcon: _SvgIcon('assets/icons/shuttlecock.svg', selected: true),
     ),
     _NavTab(
       route: AppRoute.settings,
-      label: 'Settings',
-      icon: Icons.settings_outlined,
-      selectedIcon: Icons.settings,
+      label: '설정',
+      icon: Icon(Icons.settings_outlined),
+      selectedIcon: Icon(Icons.settings),
     ),
   ];
 
@@ -61,8 +62,8 @@ class HomeShell extends StatelessWidget {
         destinations: [
           for (final tab in _tabs)
             NavigationDestination(
-              icon: Icon(tab.icon),
-              selectedIcon: Icon(tab.selectedIcon),
+              icon: tab.icon,
+              selectedIcon: tab.selectedIcon,
               label: tab.label,
             ),
         ],
@@ -81,6 +82,28 @@ class _NavTab {
 
   final String route;
   final String label;
-  final IconData icon;
-  final IconData selectedIcon;
+  final Widget icon;
+  final Widget selectedIcon;
+}
+
+/// Renders an SVG asset at Material's default icon size, tinted to match the
+/// surrounding [IconTheme] so it picks up NavigationBar's selected/unselected
+/// colors automatically.
+class _SvgIcon extends StatelessWidget {
+  const _SvgIcon(this.asset, {this.selected = false});
+
+  final String asset;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconTheme = IconTheme.of(context);
+    final color = iconTheme.color ?? Theme.of(context).colorScheme.onSurface;
+    return SvgPicture.asset(
+      asset,
+      width: iconTheme.size ?? 24,
+      height: iconTheme.size ?? 24,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+    );
+  }
 }

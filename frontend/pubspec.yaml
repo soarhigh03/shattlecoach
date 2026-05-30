@@ -33,6 +33,9 @@ dependencies:
   # Permissions (camera, notifications)
   permission_handler: ^11.3.1
 
+  # SVG rendering (custom icons in nav bar etc.)
+  flutter_svg: ^2.0.10+1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
