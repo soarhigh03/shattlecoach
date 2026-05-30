@@ -116,12 +116,23 @@ class SignOutPage extends ConsumerWidget {
         );
       },
     );
-    if (confirmed != true) return;
-    await ref.read(authServiceProvider).signOut();
-    await ref.read(onboardingServiceProvider).reset();
-    ref.invalidate(onboardingCompletedProvider);
-    if (!context.mounted) return;
-    context.go(AppRoute.onboardingSignIn);
+    if (confirmed != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    // deleteAccount flips Supabase auth to signed-out, which triggers the
+    // router refresh and disposes this widget mid-await. Capture a container
+    // reference up front so we can still reset onboarding afterwards.
+    final container = ProviderScope.containerOf(context, listen: false);
+    try {
+      await container.read(authServiceProvider).deleteAccount();
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('탈퇴 실패: $e'), behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
+    await container.read(onboardingServiceProvider).reset();
+    container.invalidate(onboardingCompletedProvider);
+    // Router redirect handles navigation to sign-in.
   }
 }
 
