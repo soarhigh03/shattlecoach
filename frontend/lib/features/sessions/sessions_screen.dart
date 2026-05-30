@@ -1,22 +1,586 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../shell/feature_placeholder.dart';
+import 'session_models.dart';
+import 'session_providers.dart';
+import 'session_schedule.dart';
+import 'widgets/attendees_sheet.dart';
 
-class SessionsScreen extends StatelessWidget {
+class SessionsScreen extends ConsumerWidget {
   const SessionsScreen({super.key});
 
   @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(selectedDateProvider);
+    final weekStart = mondayOf(selected);
+    final dates = List.generate(7, (i) => weekStart.add(Duration(days: i)));
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            _WeekHeader(
+              weekStart: weekStart,
+              onShift: (delta) {
+                final next = selected.add(Duration(days: 7 * delta));
+                ref.read(selectedDateProvider.notifier).state = DateTime(
+                  next.year,
+                  next.month,
+                  next.day,
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            _DateStrip(dates: dates, selected: selected),
+            const SizedBox(height: 16),
+            const Expanded(child: _SessionList()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeekHeader extends StatelessWidget {
+  const _WeekHeader({required this.weekStart, required this.onShift});
+
+  final DateTime weekStart;
+
+  /// -1 = previous week, +1 = next week.
+  final void Function(int delta) onShift;
+
+  @override
   Widget build(BuildContext context) {
-    return const FeaturePlaceholder(
-      title: '운동 신청',
-      icon: Icons.event_available,
-      tagline: '정기 / 비정기 운동 세션을\n바로 신청하고 관리해요.',
-      bullets: [
-        '운영진이 올린 세션 목록 (날짜 / 장소 / 정원)',
-        '신청하기 · 신청 취소',
-        '내 신청 내역 (예정 / 지난 세션)',
-        '정원 마감 시 대기열 자동 등록',
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          _ArrowButton(
+            icon: Icons.chevron_left,
+            onTap: () => onShift(-1),
+            semanticsLabel: '이전 주',
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                '${weekLabel(weekStart)} 운동 신청',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          _ArrowButton(
+            icon: Icons.chevron_right,
+            onTap: () => onShift(1),
+            semanticsLabel: '다음 주',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArrowButton extends StatelessWidget {
+  const _ArrowButton({
+    required this.icon,
+    required this.onTap,
+    required this.semanticsLabel,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final String semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: 24),
+      color: theme.colorScheme.onSurface,
+      tooltip: semanticsLabel,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
+class _DateStrip extends ConsumerWidget {
+  const _DateStrip({required this.dates, required this.selected});
+  final List<DateTime> dates;
+  final DateTime selected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+          for (final d in dates)
+            Expanded(
+              child: _DateCell(
+                date: d,
+                isSelected: _sameDay(d, selected),
+                isPast: d.isBefore(today),
+                onTap: () => ref.read(selectedDateProvider.notifier).state =
+                    DateTime(d.year, d.month, d.day),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+class _DateCell extends StatelessWidget {
+  const _DateCell({
+    required this.date,
+    required this.isSelected,
+    required this.isPast,
+    required this.onTap,
+  });
+
+  final DateTime date;
+  final bool isSelected;
+  final bool isPast;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dow = const ['월', '화', '수', '목', '금', '토', '일'][date.weekday - 1];
+    final dimColor = theme.colorScheme.onSurface.withValues(alpha: 0.32);
+    final dimMuted = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
+    return InkWell(
+      onTap: isPast ? null : onTap,
+      borderRadius: BorderRadius.circular(28),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: isSelected
+                  ? BoxDecoration(
+                      color: theme.colorScheme.onSurface,
+                      shape: BoxShape.circle,
+                    )
+                  : null,
+              child: Text(
+                '${date.day}',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected
+                      ? theme.colorScheme.surface
+                      : isPast
+                      ? dimColor
+                      : theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              dow,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: isPast ? dimMuted : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SessionList extends ConsumerWidget {
+  const _SessionList();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final date = ref.watch(selectedDateProvider);
+    final async = ref.watch(sessionViewsProvider(date));
+    final theme = Theme.of(context);
+
+    return async.when(
+      loading: () => const _SkeletonList(),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            '세션을 불러오지 못했어요.\n$e',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ),
+      data: (views) {
+        if (views.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+            child: Center(
+              child: Text(
+                '오늘은 운동이 없어요.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+          itemCount: views.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (_, i) => _SessionCard(view: views[i]),
+        );
+      },
+    );
+  }
+}
+
+class _SessionCard extends ConsumerStatefulWidget {
+  const _SessionCard({required this.view});
+  final SessionView view;
+
+  @override
+  ConsumerState<_SessionCard> createState() => _SessionCardState();
+}
+
+class _SessionCardState extends ConsumerState<_SessionCard> {
+  bool _busy = false;
+
+  Future<void> _toggleRegistration() async {
+    final view = widget.view;
+    final repo = ref.read(sessionsRepositoryProvider);
+    setState(() => _busy = true);
+    try {
+      if (view.registered && view.sessionId != null) {
+        await repo.unregister(view.sessionId!);
+      } else {
+        await repo.register(
+          date: view.date,
+          slot: view.template.slot,
+          capacity: view.template.capacity,
+        );
+      }
+      ref.invalidate(sessionViewsProvider(view.date));
+      if (view.sessionId != null) {
+        ref.invalidate(attendeesProvider(view.sessionId!));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_friendlyError(e))));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  String _friendlyError(Object e) {
+    final msg = e.toString();
+    if (msg.contains('session full')) return '정원이 마감되었어요.';
+    if (msg.contains('session not open')) return '세션이 닫혀 있어요.';
+    return '처리에 실패했어요.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final v = widget.view;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  v.title,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                '${v.attendeeCount}/${v.template.capacity}',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _InfoRow(label: '시간', value: v.template.timeRange),
+          const SizedBox(height: 4),
+          _InfoRow(label: '장소', value: v.template.location),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _SecondaryButton(
+                  label: '참여자 명단 보기',
+                  onPressed: () => showAttendeesSheet(
+                    context: context,
+                    sessionId: v.sessionId,
+                    title: v.title,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _PrimaryButton(
+                  label: v.registered ? '신청 취소' : '신청하기',
+                  enabled: !_busy && (v.registered || !v.full),
+                  busy: _busy,
+                  onPressed: _toggleRegistration,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label -',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _PrimaryButton extends StatelessWidget {
+  const _PrimaryButton({
+    required this.label,
+    required this.onPressed,
+    required this.enabled,
+    required this.busy,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final bool enabled;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FilledButton(
+      onPressed: enabled ? onPressed : null,
+      style: FilledButton.styleFrom(
+        backgroundColor: theme.colorScheme.onSurface,
+        foregroundColor: theme.colorScheme.surface,
+        disabledBackgroundColor: theme.colorScheme.onSurface.withValues(
+          alpha: 0.4,
+        ),
+        disabledForegroundColor: theme.colorScheme.surface,
+        minimumSize: const Size.fromHeight(44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      ),
+      child: busy
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : Text(label),
+    );
+  }
+}
+
+class _SecondaryButton extends StatelessWidget {
+  const _SecondaryButton({required this.label, required this.onPressed});
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FilledButton(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+        foregroundColor: theme.colorScheme.onSurface,
+        minimumSize: const Size.fromHeight(44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+      ),
+      child: Text(label),
+    );
+  }
+}
+
+class _SkeletonList extends StatefulWidget {
+  const _SkeletonList();
+
+  @override
+  State<_SkeletonList> createState() => _SkeletonListState();
+}
+
+class _SkeletonListState extends State<_SkeletonList>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 2,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (_, _) => _SkeletonCard(pulse: _pulse),
+    );
+  }
+}
+
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard({required this.pulse});
+  final Animation<double> pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _SkeletonBox(pulse: pulse, width: 110, height: 18),
+              const Spacer(),
+              _SkeletonBox(pulse: pulse, width: 36, height: 14),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _SkeletonBox(pulse: pulse, width: 150, height: 14),
+          const SizedBox(height: 8),
+          _SkeletonBox(pulse: pulse, width: 200, height: 14),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _SkeletonBox(
+                  pulse: pulse,
+                  width: double.infinity,
+                  height: 44,
+                  radius: 10,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _SkeletonBox(
+                  pulse: pulse,
+                  width: double.infinity,
+                  height: 44,
+                  radius: 10,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  const _SkeletonBox({
+    required this.pulse,
+    required this.width,
+    required this.height,
+    this.radius = 4,
+  });
+
+  final Animation<double> pulse;
+  final double width;
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedBuilder(
+      animation: pulse,
+      builder: (_, _) {
+        final base = theme.colorScheme.surfaceContainerHighest;
+        final highlight = theme.colorScheme.surface;
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: Color.lerp(base, highlight, pulse.value * 0.6),
+            borderRadius: BorderRadius.circular(radius),
+          ),
+        );
+      },
     );
   }
 }
