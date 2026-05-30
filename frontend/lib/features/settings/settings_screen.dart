@@ -59,7 +59,7 @@ class SettingsScreen extends ConsumerWidget {
                 await ref.read(onboardingServiceProvider).reset();
                 ref.invalidate(onboardingCompletedProvider);
                 if (!context.mounted) return;
-                context.go(AppRoute.onboardingWelcome);
+                context.go(AppRoute.onboardingProfile);
               },
             ),
             const SizedBox(height: 32),

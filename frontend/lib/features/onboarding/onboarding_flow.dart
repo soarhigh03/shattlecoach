@@ -10,8 +10,6 @@ class OnboardingFlow extends StatelessWidget {
   final Widget child;
 
   static const _steps = <String>[
-    AppRoute.onboardingWelcome,
-    AppRoute.onboardingSignIn,
     AppRoute.onboardingProfile,
     AppRoute.onboardingPermissions,
   ];

@@ -40,64 +40,113 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     final theme = Theme.of(context);
     final configured = SupabaseBootstrap.isInitialized;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 24),
-          const Center(child: AppLogo(size: 128)),
-          const SizedBox(height: 24),
-          Text(
-            'Google 계정으로 시작하기',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '셔틀코치는 Google 소셜 로그인만 지원해요.\n동아리 계정 정보로 가입해 주세요.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const Spacer(),
-          if (!configured)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _ConfigNotice(),
-            ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                _error!,
-                style: TextStyle(color: theme.colorScheme.tertiary),
-                textAlign: TextAlign.center,
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              const Spacer(flex: 5),
+              const AppLogo(size: 96),
+              const SizedBox(height: 12),
+              Text(
+                'shattlecoach',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
-            ),
-          FilledButton.icon(
-            onPressed: _busy ? null : _signIn,
-            icon: _busy
+              const SizedBox(height: 40),
+              if (!configured) ...[
+                const _ConfigNotice(),
+                const SizedBox(height: 12),
+              ],
+              if (_error != null) ...[
+                Text(
+                  _error!,
+                  style: TextStyle(color: theme.colorScheme.tertiary),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+              ],
+              _GoogleSignInButton(busy: _busy, onPressed: _signIn),
+              const Spacer(flex: 7),
+              Text(
+                '© shattlecock 2026',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.6,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GoogleSignInButton extends StatelessWidget {
+  const _GoogleSignInButton({required this.busy, required this.onPressed});
+
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bg = isDark
+        ? theme.colorScheme.surfaceContainerHighest
+        : const Color(0xFFF5F5F7);
+
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: busy ? null : onPressed,
+          child: Center(
+            child: busy
                 ? const SizedBox(
-                    width: 18,
-                    height: 18,
+                    width: 22,
+                    height: 22,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.login),
-            label: const Text('Google로 계속하기'),
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/logo/google logo.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Google로 계속하기',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
-          const SizedBox(height: 24),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _ConfigNotice extends StatelessWidget {
+  const _ConfigNotice();
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

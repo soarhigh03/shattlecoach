@@ -11,7 +11,6 @@ import '../features/onboarding/onboarding_flow.dart';
 import '../features/onboarding/permission_primers_page.dart';
 import '../features/onboarding/profile_setup_page.dart';
 import '../features/onboarding/sign_in_page.dart';
-import '../features/onboarding/welcome_page.dart';
 import '../features/report/report_screen.dart';
 import '../features/sessions/sessions_screen.dart';
 import '../features/settings/licenses_page.dart';
@@ -27,7 +26,6 @@ class AppRoute {
 
   static const splash = '/';
 
-  static const onboardingWelcome = '/onboarding/welcome';
   static const onboardingSignIn = '/onboarding/sign-in';
   static const onboardingProfile = '/onboarding/profile';
   static const onboardingPermissions = '/onboarding/permissions';
@@ -75,16 +73,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final inOnboarding = loc.startsWith('/onboarding');
       final atSplash = loc == AppRoute.splash;
 
-      if (!onboardingDone) {
-        // Force onboarding flow start until completion.
-        if (!inOnboarding) return AppRoute.onboardingWelcome;
-        return null;
-      }
-
-      // Onboarding complete but signed out → bounce to sign-in.
+      // Signed out → sign-in is the landing.
       if (user == null) {
         if (loc == AppRoute.onboardingSignIn) return null;
         return AppRoute.onboardingSignIn;
+      }
+
+      // Signed in but onboarding not finished → profile/permissions steps.
+      if (!onboardingDone) {
+        if (loc == AppRoute.onboardingProfile ||
+            loc == AppRoute.onboardingPermissions) {
+          return null;
+        }
+        return AppRoute.onboardingProfile;
       }
 
       // Signed in + onboarded → no business at splash or onboarding.
@@ -94,17 +95,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: _RouterRefresh(ref),
     routes: [
       GoRoute(path: AppRoute.splash, builder: (_, _) => const _SplashScreen()),
+      GoRoute(
+        path: AppRoute.onboardingSignIn,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, _) => const SignInPage(),
+      ),
       ShellRoute(
         builder: (context, state, child) => OnboardingFlow(child: child),
         routes: [
-          GoRoute(
-            path: AppRoute.onboardingWelcome,
-            builder: (_, _) => const WelcomePage(),
-          ),
-          GoRoute(
-            path: AppRoute.onboardingSignIn,
-            builder: (_, _) => const SignInPage(),
-          ),
           GoRoute(
             path: AppRoute.onboardingProfile,
             builder: (_, _) => const ProfileSetupPage(),
