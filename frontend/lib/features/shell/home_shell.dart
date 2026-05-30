@@ -16,7 +16,10 @@ class HomeShell extends StatelessWidget {
       route: AppRoute.aiCoach,
       label: 'AI코치',
       icon: _SvgIcon('assets/icons/badminton-player.svg'),
-      selectedIcon: _SvgIcon('assets/icons/badminton-player.svg', selected: true),
+      selectedIcon: _SvgIcon(
+        'assets/icons/badminton-player.svg',
+        selected: true,
+      ),
     ),
     _NavTab(
       route: AppRoute.report,

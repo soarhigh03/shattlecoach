@@ -79,13 +79,9 @@ class SettingsScreen extends ConsumerWidget {
     if (code == null || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     if (code == _execCodeForCurrentQuarter) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('임원진으로 등록되었습니다.')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('임원진으로 등록되었습니다.')));
     } else {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('잘못된 코드입니다.')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('잘못된 코드입니다.')));
     }
   }
 

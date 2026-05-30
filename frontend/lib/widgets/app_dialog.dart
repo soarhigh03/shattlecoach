@@ -111,8 +111,10 @@ Future<T?> showAppDialog<T>({
     barrierLabel: 'AppDialog',
     barrierColor: Colors.black.withValues(alpha: 0.3),
     transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (context, _, _) =>
-        AppDialog(title: title, child: Builder(builder: builder)),
+    pageBuilder: (context, _, _) => AppDialog(
+      title: title,
+      child: Builder(builder: builder),
+    ),
     transitionBuilder: (context, anim, _, child) {
       final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
       return FadeTransition(
