@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,10 +7,22 @@ import '../../routing/app_router.dart';
 
 /// 5-tab bottom navigation shell. The active tab is derived from the current
 /// route so deep links and programmatic navigation stay in sync.
-class HomeShell extends StatelessWidget {
+class HomeShell extends StatefulWidget {
   const HomeShell({super.key, required this.child});
 
   final Widget child;
+
+  @override
+  State<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends State<HomeShell> {
+  @override
+  void initState() {
+    super.initState();
+    // Onboarding hides the status bar; bring it back when the user lands here.
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
 
   static const _tabs = <_NavTab>[
     _NavTab(
@@ -58,7 +71,7 @@ class HomeShell extends StatelessWidget {
     final selectedIndex = _indexForLocation(location);
 
     return Scaffold(
-      body: child,
+      body: widget.child,
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainer,

@@ -69,6 +69,27 @@ class AuthService {
     await _auth.signOut();
     await GoogleSignIn().signOut();
   }
+
+  /// Delete the current user from Supabase, then sign out locally and
+  /// disconnect the Google account so the next sign-in re-prompts the picker.
+  ///
+  /// Requires a Supabase SQL function `public.delete_account()` that runs
+  /// `delete from auth.users where id = auth.uid();` under `security definer`.
+  Future<void> deleteAccount() async {
+    if (!SupabaseBootstrap.isInitialized) {
+      throw StateError('Supabase is not initialized.');
+    }
+    await SupabaseBootstrap.client.rpc<void>('delete_account');
+    await _auth.signOut();
+    // disconnect() (not just signOut) revokes the OAuth grant so the freshly
+    // deleted account doesn't auto-select on the next attempt. Falls back to
+    // signOut if disconnect fails (e.g., already disconnected).
+    try {
+      await GoogleSignIn().disconnect();
+    } catch (_) {
+      await GoogleSignIn().signOut();
+    }
+  }
 }
 
 class _AuthCancelledException implements Exception {

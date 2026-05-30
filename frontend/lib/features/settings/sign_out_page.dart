@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../routing/app_router.dart';
 import '../../services/auth_service.dart';
+import '../../services/onboarding_service.dart';
 import '../../widgets/app_dialog.dart';
 
 class SignOutPage extends ConsumerWidget {
@@ -35,7 +37,7 @@ class SignOutPage extends ConsumerWidget {
             _ActionRow(
               label: '계정 탈퇴',
               color: theme.colorScheme.tertiary,
-              onTap: () => _confirmDeleteAccount(context),
+              onTap: () => _confirmDeleteAccount(context, ref),
             ),
           ],
         ),
@@ -74,24 +76,69 @@ class SignOutPage extends ConsumerWidget {
     );
     if (confirmed != true) return;
     await ref.read(authServiceProvider).signOut();
+    if (!context.mounted) return;
+    context.go(AppRoute.onboardingSignIn);
   }
 
-  Future<void> _confirmDeleteAccount(BuildContext context) {
-    return showAppDialog<void>(
+  Future<void> _confirmDeleteAccount(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await showAppDialog<bool>(
       context: context,
       title: '계정 탈퇴',
-      builder: (dialogContext) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('계정 탈퇴는 현재 준비 중이에요.\n곧 지원할 예정입니다.'),
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('확인'),
-          ),
-        ],
-      ),
+      builder: (dialogContext) {
+        final colors = Theme.of(dialogContext).colorScheme;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('탈퇴하시면 앱의 모든 데이터가 초기화돼요.\n정말 진행하시겠어요?'),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: const Text('취소'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colors.tertiary,
+                      foregroundColor: colors.onTertiary,
+                    ),
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: const Text('탈퇴'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
+    if (confirmed != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    // deleteAccount flips Supabase auth to signed-out, which triggers the
+    // router refresh and disposes this widget mid-await. Capture a container
+    // reference up front so we can still reset onboarding afterwards.
+    final container = ProviderScope.containerOf(context, listen: false);
+    try {
+      await container.read(authServiceProvider).deleteAccount();
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('탈퇴 실패: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    await container.read(onboardingServiceProvider).reset();
+    container.invalidate(onboardingCompletedProvider);
+    // Router redirect handles navigation to sign-in.
   }
 }
 
