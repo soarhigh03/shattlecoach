@@ -37,10 +37,10 @@ class _SignInPageState extends ConsumerState<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final configured = SupabaseBootstrap.isInitialized;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF2C2C2E),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -49,11 +49,12 @@ class _SignInPageState extends ConsumerState<SignInPage> {
               const Spacer(flex: 5),
               const AppLogo(size: 96),
               const SizedBox(height: 12),
-              Text(
+              const Text(
                 'shattlecoach',
-                style: theme.textTheme.headlineSmall?.copyWith(
+                style: TextStyle(
+                  fontSize: 24,
                   fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 40),
@@ -64,7 +65,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
               if (_error != null) ...[
                 Text(
                   _error!,
-                  style: TextStyle(color: theme.colorScheme.tertiary),
+                  style: const TextStyle(color: Color(0xFFFF6B8A)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
@@ -73,10 +74,9 @@ class _SignInPageState extends ConsumerState<SignInPage> {
               const Spacer(flex: 7),
               Text(
                 '© shattlecock 2026',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant.withValues(
-                    alpha: 0.6,
-                  ),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.5),
                 ),
               ),
               const SizedBox(height: 16),
@@ -109,6 +109,8 @@ class _GoogleSignInButton extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(28),
         clipBehavior: Clip.antiAlias,
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.18),
         child: InkWell(
           onTap: busy ? null : onPressed,
           child: Center(
