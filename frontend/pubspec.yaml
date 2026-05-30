@@ -36,6 +36,9 @@ dependencies:
   # Photo picking (post image attachments)
   image_picker: ^1.1.2
 
+  # Inline video preview for AI coach (picked clip + algorithm output)
+  video_player: ^2.9.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
