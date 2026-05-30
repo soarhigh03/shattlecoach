@@ -67,8 +67,12 @@ class _EquipmentScreenState extends ConsumerState<EquipmentScreen>
               ),
               labelColor: theme.colorScheme.onSurface,
               unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-              indicatorColor: theme.colorScheme.onSurface,
-              indicatorWeight: 2,
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(
+                  color: theme.colorScheme.onSurface,
+                  width: 2,
+                ),
+              ),
               dividerColor: theme.colorScheme.outlineVariant,
               tabs: const [
                 Tab(text: '공식 공동구매'),
