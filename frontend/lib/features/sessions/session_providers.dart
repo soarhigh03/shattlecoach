@@ -6,9 +6,7 @@ import 'session_models.dart';
 import 'session_schedule.dart';
 
 /// Selected day in the date strip. Defaults to today.
-final selectedDateProvider = StateProvider<DateTime>(
-  (_) => DateTime.now(),
-);
+final selectedDateProvider = StateProvider<DateTime>((_) => DateTime.now());
 
 class SessionsRepository {
   SessionsRepository(this._client);
@@ -65,11 +63,7 @@ class SessionsRepository {
   }) async {
     await _client.rpc<dynamic>(
       'register_session',
-      params: {
-        'p_date': _ymd(date),
-        'p_slot': slot,
-        'p_capacity': capacity,
-      },
+      params: {'p_date': _ymd(date), 'p_slot': slot, 'p_capacity': capacity},
     );
   }
 
@@ -143,11 +137,8 @@ final sessionsRepositoryProvider = Provider<SessionsRepository>(
 );
 
 /// Merged schedule + DB state for the selected date.
-final sessionViewsProvider =
-    FutureProvider.autoDispose.family<List<SessionView>, DateTime>((
-      ref,
-      date,
-    ) async {
+final sessionViewsProvider = FutureProvider.autoDispose
+    .family<List<SessionView>, DateTime>((ref, date) async {
       final templates = templatesForDate(date);
       if (templates.isEmpty || !SupabaseBootstrap.isInitialized) {
         return [
@@ -181,8 +172,8 @@ final sessionViewsProvider =
       ];
     });
 
-final attendeesProvider =
-    FutureProvider.autoDispose.family<List<Attendee>, String>(
+final attendeesProvider = FutureProvider.autoDispose
+    .family<List<Attendee>, String>(
       (ref, sessionId) async =>
           ref.read(sessionsRepositoryProvider).attendees(sessionId),
     );

@@ -84,8 +84,7 @@ String weekLabel(DateTime weekStart) {
   final firstMonday = firstOfMonth.add(Duration(days: daysToFirstMonday));
   final partialFirstWeek = firstOfMonth.weekday != DateTime.monday;
   final base = partialFirstWeek ? 2 : 1;
-  final weeksFromFirstMonday =
-      monday.difference(firstMonday).inDays ~/ 7;
+  final weeksFromFirstMonday = monday.difference(firstMonday).inDays ~/ 7;
   final weekNum = base + weeksFromFirstMonday;
   return '${monday.month}월 $weekNum주차';
 }

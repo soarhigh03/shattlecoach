@@ -78,9 +78,7 @@ class SettingsScreen extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
 
     if (!SupabaseBootstrap.isInitialized) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('로그인이 필요합니다.')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
       return;
     }
 
@@ -91,13 +89,9 @@ class SettingsScreen extends ConsumerWidget {
       );
       if (!context.mounted) return;
       if (ok == true) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('임원진으로 등록되었습니다.')),
-        );
+        messenger.showSnackBar(const SnackBar(content: Text('임원진으로 등록되었습니다.')));
       } else {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('잘못된 코드입니다.')),
-        );
+        messenger.showSnackBar(const SnackBar(content: Text('잘못된 코드입니다.')));
       }
     } catch (_) {
       if (!context.mounted) return;

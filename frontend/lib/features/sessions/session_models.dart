@@ -42,6 +42,7 @@ class SessionTemplate {
       final mm = (m % 60).toString().padLeft(2, '0');
       return '$h:$mm';
     }
+
     return '${fmt(startMinute)}-${fmt(endMinute)}';
   }
 }

@@ -13,10 +13,7 @@ class SessionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedDateProvider);
     final weekStart = mondayOf(selected);
-    final dates = List.generate(
-      7,
-      (i) => weekStart.add(Duration(days: i)),
-    );
+    final dates = List.generate(7, (i) => weekStart.add(Duration(days: i)));
 
     return Scaffold(
       body: SafeArea(
@@ -49,6 +46,7 @@ class _WeekHeader extends StatelessWidget {
   const _WeekHeader({required this.weekStart, required this.onShift});
 
   final DateTime weekStart;
+
   /// -1 = previous week, +1 = next week.
   final void Function(int delta) onShift;
 
@@ -185,8 +183,8 @@ class _DateCell extends StatelessWidget {
                   color: isSelected
                       ? theme.colorScheme.surface
                       : isPast
-                          ? dimColor
-                          : theme.colorScheme.onSurface,
+                      ? dimColor
+                      : theme.colorScheme.onSurface,
                 ),
               ),
             ),
@@ -284,9 +282,9 @@ class _SessionCardState extends ConsumerState<_SessionCard> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_friendlyError(e))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_friendlyError(e))));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -426,9 +424,7 @@ class _PrimaryButton extends StatelessWidget {
         ),
         disabledForegroundColor: theme.colorScheme.surface,
         minimumSize: const Size.fromHeight(44),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
       ),
       child: busy
@@ -459,9 +455,7 @@ class _SecondaryButton extends StatelessWidget {
         backgroundColor: theme.colorScheme.surfaceContainerHighest,
         foregroundColor: theme.colorScheme.onSurface,
         minimumSize: const Size.fromHeight(44),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
       ),
       child: Text(label),
