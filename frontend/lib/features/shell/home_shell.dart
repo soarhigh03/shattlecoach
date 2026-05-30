@@ -56,17 +56,30 @@ class HomeShell extends StatelessWidget {
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (i) => context.go(_tabs[i].route),
-        destinations: [
-          for (final tab in _tabs)
-            NavigationDestination(
-              icon: tab.icon,
-              selectedIcon: tab.selectedIcon,
-              label: tab.label,
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
             ),
-        ],
+          ],
+        ),
+        child: NavigationBar(
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          selectedIndex: selectedIndex,
+          onDestinationSelected: (i) => context.go(_tabs[i].route),
+          destinations: [
+            for (final tab in _tabs)
+              NavigationDestination(
+                icon: tab.icon,
+                selectedIcon: tab.selectedIcon,
+                label: tab.label,
+              ),
+          ],
+        ),
       ),
     );
   }
