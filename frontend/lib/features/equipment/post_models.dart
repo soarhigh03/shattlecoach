@@ -33,7 +33,11 @@ enum PostStatus {
 }
 
 class PostImage {
-  const PostImage({required this.id, required this.storagePath, required this.ord});
+  const PostImage({
+    required this.id,
+    required this.storagePath,
+    required this.ord,
+  });
 
   final String id;
   final String storagePath;
@@ -69,20 +73,20 @@ class Post {
 
   /// First line of body — used as the subtitle in the list view.
   String get subtitle {
-    final firstLine = body.split('\n').firstWhere(
-      (l) => l.trim().isNotEmpty,
-      orElse: () => '',
-    );
+    final firstLine = body
+        .split('\n')
+        .firstWhere((l) => l.trim().isNotEmpty, orElse: () => '');
     return firstLine.trim();
   }
 
   factory Post.fromJson(Map<String, dynamic> json) {
     final imagesRaw = json['post_images'] as List<dynamic>?;
-    final images = imagesRaw == null
-        ? const <PostImage>[]
-        : imagesRaw
-              .map((e) => PostImage.fromJson(e as Map<String, dynamic>))
-              .toList()
+    final images =
+        imagesRaw == null
+              ? const <PostImage>[]
+              : imagesRaw
+                    .map((e) => PostImage.fromJson(e as Map<String, dynamic>))
+                    .toList()
           ..sort((a, b) => a.ord.compareTo(b.ord));
     return Post(
       id: json['id'] as String,

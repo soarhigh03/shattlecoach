@@ -29,7 +29,9 @@ class PostsRepository {
   Future<List<Post>> list(PostKind kind) async {
     final rows = await _client
         .from('posts')
-        .select('id, kind, title, body, status, author_id, created_at, post_images(id, storage_path, ord)')
+        .select(
+          'id, kind, title, body, status, author_id, created_at, post_images(id, storage_path, ord)',
+        )
         .eq('kind', kind.wire)
         .order('created_at', ascending: false);
     return (rows as List)
@@ -40,7 +42,9 @@ class PostsRepository {
   Future<Post> fetch(String id) async {
     final row = await _client
         .from('posts')
-        .select('id, kind, title, body, status, author_id, created_at, post_images(id, storage_path, ord)')
+        .select(
+          'id, kind, title, body, status, author_id, created_at, post_images(id, storage_path, ord)',
+        )
         .eq('id', id)
         .single();
     return Post.fromJson(row);

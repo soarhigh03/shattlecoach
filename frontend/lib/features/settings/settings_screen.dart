@@ -79,9 +79,7 @@ class SettingsScreen extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
 
     if (!SupabaseBootstrap.isInitialized) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('로그인이 필요합니다.')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
       return;
     }
 
@@ -95,13 +93,9 @@ class SettingsScreen extends ConsumerWidget {
         // Role was just promoted in the DB; refresh the cached role flag so
         // gates like the 공식 공동구매 chip flip on without a restart.
         ref.invalidate(isExecutiveProvider);
-        messenger.showSnackBar(
-          const SnackBar(content: Text('임원진으로 등록되었습니다.')),
-        );
+        messenger.showSnackBar(const SnackBar(content: Text('임원진으로 등록되었습니다.')));
       } else {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('잘못된 코드입니다.')),
-        );
+        messenger.showSnackBar(const SnackBar(content: Text('잘못된 코드입니다.')));
       }
     } catch (_) {
       if (!context.mounted) return;

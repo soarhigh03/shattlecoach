@@ -386,11 +386,7 @@ class StatusBadge extends StatelessWidget {
       ),
       child: Text(
         status.label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: fg),
       ),
     );
   }

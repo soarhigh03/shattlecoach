@@ -64,40 +64,40 @@ Future<void> showMenuDropdown({
                     ],
                   ),
                   child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var i = 0; i < items.length; i++)
-                      InkWell(
-                        onTap: () => Navigator.of(ctx).pop(i),
-                        borderRadius: BorderRadius.vertical(
-                          top: i == 0
-                              ? const Radius.circular(12)
-                              : Radius.zero,
-                          bottom: i == items.length - 1
-                              ? const Radius.circular(12)
-                              : Radius.zero,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < items.length; i++)
+                        InkWell(
+                          onTap: () => Navigator.of(ctx).pop(i),
+                          borderRadius: BorderRadius.vertical(
+                            top: i == 0
+                                ? const Radius.circular(12)
+                                : Radius.zero,
+                            bottom: i == items.length - 1
+                                ? const Radius.circular(12)
+                                : Radius.zero,
                           ),
-                          child: Text(
-                            items[i].label,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: items[i].destructive
-                                  ? theme.colorScheme.error
-                                  : theme.colorScheme.onSurface,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            child: Text(
+                              items[i].label,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: items[i].destructive
+                                    ? theme.colorScheme.error
+                                    : theme.colorScheme.onSurface,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
               ),
             ),
           ),

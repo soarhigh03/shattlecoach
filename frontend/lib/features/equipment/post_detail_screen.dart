@@ -117,9 +117,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       ref.invalidate(postProvider(post.id));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('상태 변경에 실패했어요: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('상태 변경에 실패했어요: $e')));
     }
   }
 
@@ -163,9 +163,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('삭제에 실패했어요: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('삭제에 실패했어요: $e')));
     }
   }
 }
@@ -211,10 +211,7 @@ class _PostBody extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
         if (post.body.trim().isNotEmpty)
-          Text(
-            post.body,
-            style: const TextStyle(fontSize: 15, height: 1.55),
-          ),
+          Text(post.body, style: const TextStyle(fontSize: 15, height: 1.55)),
         if (post.images.isNotEmpty) ...[
           const SizedBox(height: 20),
           for (final img in post.images) ...[

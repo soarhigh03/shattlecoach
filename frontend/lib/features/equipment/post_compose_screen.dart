@@ -62,9 +62,9 @@ class _PostComposeScreenState extends ConsumerState<PostComposeScreen> {
   Future<void> _submit() async {
     final title = _title.text.trim();
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제목을 입력해 주세요.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('제목을 입력해 주세요.')));
       return;
     }
     setState(() => _submitting = true);
@@ -94,9 +94,9 @@ class _PostComposeScreenState extends ConsumerState<PostComposeScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('등록에 실패했어요: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('등록에 실패했어요: $e')));
     }
   }
 
@@ -272,13 +272,13 @@ class _KindChip extends StatelessWidget {
     final fg = !enabled
         ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
         : selected
-            ? theme.colorScheme.onSurface
-            : theme.colorScheme.onSurfaceVariant;
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.onSurfaceVariant;
     final border = !enabled
         ? theme.colorScheme.outlineVariant
         : selected
-            ? theme.colorScheme.onSurface
-            : theme.colorScheme.outline;
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.outline;
     return Opacity(
       opacity: enabled ? 1 : 0.5,
       child: InkWell(
