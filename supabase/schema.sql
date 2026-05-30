@@ -131,13 +131,17 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- Block email change + non-executive role escalation.
+-- RPCs that intentionally bump role (e.g. redeem_executive_code) set
+-- app.role_change_authorized=true within their transaction to bypass this.
 create or replace function public.guard_profile_changes()
 returns trigger language plpgsql as $$
 begin
   if new.email is distinct from old.email then
     raise exception 'email is immutable';
   end if;
-  if new.role is distinct from old.role and not public.is_executive() then
+  if new.role is distinct from old.role
+     and not public.is_executive()
+     and coalesce(current_setting('app.role_change_authorized', true), 'false') <> 'true' then
     raise exception 'only executives can change role';
   end if;
   return new;
@@ -252,6 +256,41 @@ create policy post_images_write on public.post_images
     select 1 from public.posts p
     where p.id = post_id and (p.author_id = auth.uid() or public.is_executive())
   ));
+
+-- ============================================================
+-- RPC: redeem executive registration code
+-- ============================================================
+-- TODO: rotate quarterly. Eventually replace with a server-issued codes table.
+create or replace function public.redeem_executive_code(code text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  expected_code constant text := '1234';
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated';
+  end if;
+
+  if code is null or btrim(code) <> expected_code then
+    return false;
+  end if;
+
+  -- Bypass the role-change guard for this transaction only.
+  perform set_config('app.role_change_authorized', 'true', true);
+
+  update public.profiles
+     set role = 'executive'
+   where id = auth.uid();
+
+  return true;
+end;
+$$;
+
+revoke all on function public.redeem_executive_code(text) from public;
+grant execute on function public.redeem_executive_code(text) to authenticated;
 
 -- ============================================================
 -- Storage bucket: post-images

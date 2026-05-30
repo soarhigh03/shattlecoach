@@ -5,10 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../routing/app_router.dart';
 import '../../services/auth_service.dart';
 import '../../services/onboarding_service.dart';
+import '../../services/supabase_service.dart';
 import '../../widgets/app_dialog.dart';
-
-/// 분기별 임원진 등록 코드. 추후 서버 발급으로 대체 예정.
-const String _execCodeForCurrentQuarter = '1234';
 
 const String _appVersion = '0.1.0';
 
@@ -78,10 +76,34 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (code == null || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    if (code == _execCodeForCurrentQuarter) {
-      messenger.showSnackBar(const SnackBar(content: Text('임원진으로 등록되었습니다.')));
-    } else {
-      messenger.showSnackBar(const SnackBar(content: Text('잘못된 코드입니다.')));
+
+    if (!SupabaseBootstrap.isInitialized) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다.')),
+      );
+      return;
+    }
+
+    try {
+      final ok = await SupabaseBootstrap.client.rpc<bool>(
+        'redeem_executive_code',
+        params: {'code': code},
+      );
+      if (!context.mounted) return;
+      if (ok == true) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('임원진으로 등록되었습니다.')),
+        );
+      } else {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('잘못된 코드입니다.')),
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('등록에 실패했습니다. 다시 시도해 주세요.')),
+      );
     }
   }
 
