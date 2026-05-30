@@ -26,7 +26,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     try {
       await ref.read(authServiceProvider).signInWithGoogle();
       if (!mounted) return;
-      context.go(AppRoute.onboardingProfile);
+      context.go(AppRoute.onboardingIntro);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
