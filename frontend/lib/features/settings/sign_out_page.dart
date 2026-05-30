@@ -22,36 +22,20 @@ class SignOutPage extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                '계정에서 로그아웃하거나 영구적으로 탈퇴할 수 있어요.',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: () => _confirmSignOut(context, ref),
-                icon: const Icon(Icons.logout),
-                label: const Text('로그아웃'),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () => _confirmDeleteAccount(context),
-                icon: Icon(Icons.no_accounts, color: theme.colorScheme.tertiary),
-                label: Text(
-                  '계정 탈퇴',
-                  style: TextStyle(color: theme.colorScheme.tertiary),
-                ),
-              ),
-            ],
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _ActionRow(
+              label: '로그아웃',
+              color: theme.colorScheme.onSurface,
+              onTap: () => _confirmSignOut(context, ref),
+            ),
+            _ActionRow(
+              label: '계정 탈퇴',
+              color: theme.colorScheme.tertiary,
+              onTap: () => _confirmDeleteAccount(context),
+            ),
+          ],
         ),
       ),
     );
@@ -104,6 +88,36 @@ class SignOutPage extends ConsumerWidget {
             child: const Text('확인'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: color,
+          ),
+        ),
       ),
     );
   }
