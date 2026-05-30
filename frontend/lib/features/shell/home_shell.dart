@@ -58,6 +58,7 @@ class HomeShell extends StatelessWidget {
       body: child,
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainer,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.12),
@@ -66,19 +67,23 @@ class HomeShell extends StatelessWidget {
             ),
           ],
         ),
-        child: NavigationBar(
-          elevation: 0,
-          surfaceTintColor: Colors.transparent,
-          selectedIndex: selectedIndex,
-          onDestinationSelected: (i) => context.go(_tabs[i].route),
-          destinations: [
-            for (final tab in _tabs)
-              NavigationDestination(
-                icon: tab.icon,
-                selectedIcon: tab.selectedIcon,
-                label: tab.label,
-              ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: NavigationBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            surfaceTintColor: Colors.transparent,
+            selectedIndex: selectedIndex,
+            onDestinationSelected: (i) => context.go(_tabs[i].route),
+            destinations: [
+              for (final tab in _tabs)
+                NavigationDestination(
+                  icon: tab.icon,
+                  selectedIcon: tab.selectedIcon,
+                  label: tab.label,
+                ),
+            ],
+          ),
         ),
       ),
     );
