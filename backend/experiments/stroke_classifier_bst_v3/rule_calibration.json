@@ -1,0 +1,251 @@
+{
+  "per_class": {
+    "high_clear": {
+      "peak_wrist_above_shoulder": {
+        "threshold": 0.2583986024618301,
+        "direction": ">=",
+        "note": "pass if measurement >= threshold (= class's 25th pctile)"
+      },
+      "elbow_extension_>=160deg": {
+        "threshold": 75.8825506424279,
+        "direction": ">=",
+        "note": "pass if measurement >= threshold (= class's 25th pctile)"
+      },
+      "hip_rotation_>=20deg": {
+        "threshold": 2.5474533251700233,
+        "direction": ">=",
+        "note": "pass if measurement >= threshold (= class's 25th pctile)"
+      },
+      "knees_bent_at_prep": {
+        "threshold": 153.86239932573815,
+        "direction": "<",
+        "note": "pass if measurement < threshold (= class's 75th pctile)"
+      },
+      "head_stable": {
+        "threshold": 0.28735182282976124,
+        "direction": "<",
+        "note": "pass if measurement < threshold (= class's 75th pctile)"
+      }
+    },
+    "short_serve": {
+      "peak_wrist_above_shoulder": {
+        "threshold": -0.37742128028901717,
+        "direction": ">=",
+        "note": "pass if measurement >= threshold (= class's 25th pctile)"
+      },
+      "elbow_extension_>=160deg": {
+        "threshold": 27.12085994474643,
+        "direction": ">=",
+        "note": "pass if measurement >= threshold (= class's 25th pctile)"
+      },
+      "hip_rotation_>=20deg": {
+        "threshold": 1.0803191864660378,
+        "direction": ">=",
+        "note": "pass if measurement >= threshold (= class's 25th pctile)"
+      },
+      "knees_bent_at_prep": {
+        "threshold": 174.32280926216666,
+        "direction": "<",
+        "note": "pass if measurement < threshold (= class's 75th pctile)"
+      },
+      "head_stable": {
+        "threshold": 0.05328390354412716,
+        "direction": "<",
+        "note": "pass if measurement < threshold (= class's 75th pctile)"
+      }
+    },
+    "forehand_drive": {
+      "peak_wrist_above_shoulder": {
+        "threshold": -0.18750142212863977,
+        "direction": ">=",
+        "note": "pass if measurement >= threshold (= class's 25th pctile)"
+      },
+      "elbow_extension_>=160deg": {
+        "threshold": 87.57680249152244,
+        "direction": ">=",
+        "note": "pass if measurement >= threshold (= class's 25th pctile)"
+      },
+      "hip_rotation_>=20deg": {
+        "threshold": 2.305099424767107,
+        "direction": ">=",
+        "note": "pass if measurement >= threshold (= class's 25th pctile)"
+      },
+      "knees_bent_at_prep": {
+        "threshold": 171.07601647200778,
+        "direction": "<",
+        "note": "pass if measurement < threshold (= class's 75th pctile)"
+      },
+      "head_stable": {
+        "threshold": 0.14385559057961156,
+        "direction": "<",
+        "note": "pass if measurement < threshold (= class's 75th pctile)"
+      }
+    }
+  },
+  "global": {
+    "peak_wrist_above_shoulder": {
+      "threshold": -0.18750142212863977,
+      "direction": ">="
+    },
+    "elbow_extension_>=160deg": {
+      "threshold": 75.8825506424279,
+      "direction": ">="
+    },
+    "hip_rotation_>=20deg": {
+      "threshold": 2.305099424767107,
+      "direction": ">="
+    },
+    "knees_bent_at_prep": {
+      "threshold": 171.07601647200778,
+      "direction": "<"
+    },
+    "head_stable": {
+      "threshold": 0.14385559057961156,
+      "direction": "<"
+    }
+  },
+  "stats_per_class": {
+    "high_clear": {
+      "peak_wrist_above_shoulder": {
+        "n": 1871,
+        "min": -13.185392544775988,
+        "p25": 0.2583986024618301,
+        "median": 0.45532746296103177,
+        "p75": 0.6449426701151808,
+        "max": 3.8332961960299206,
+        "mean": 0.4289469113097305
+      },
+      "elbow_extension_>=160deg": {
+        "n": 1871,
+        "min": 0.2012402764880435,
+        "p25": 75.8825506424279,
+        "median": 128.44268620369917,
+        "p75": 154.7055546331449,
+        "max": 179.9146432093736,
+        "mean": 114.43277995430547
+      },
+      "hip_rotation_>=20deg": {
+        "n": 1871,
+        "min": 0.0,
+        "p25": 2.5474533251700233,
+        "median": 6.555528248896363,
+        "p75": 13.98238507564031,
+        "max": 180.0,
+        "mean": 23.506624757099683
+      },
+      "knees_bent_at_prep": {
+        "n": 1871,
+        "min": 0.43387241359013906,
+        "p25": 122.95995182695626,
+        "median": 138.5567855568062,
+        "p75": 153.86239932573815,
+        "max": 179.9662791873169,
+        "mean": 137.02654487078655
+      },
+      "head_stable": {
+        "n": 1871,
+        "min": 0.0,
+        "p25": 0.1023196747753489,
+        "median": 0.17779071242180688,
+        "p75": 0.28735182282976124,
+        "max": 5.353901144616772,
+        "mean": 0.3710852656828955
+      }
+    },
+    "short_serve": {
+      "peak_wrist_above_shoulder": {
+        "n": 1496,
+        "min": -11.799679705932249,
+        "p25": -0.37742128028901717,
+        "median": -0.10309694996444717,
+        "p75": 0.08576331970884961,
+        "max": 8.399249758843236,
+        "mean": -0.16188145799323933
+      },
+      "elbow_extension_>=160deg": {
+        "n": 1496,
+        "min": 0.05264716961085828,
+        "p25": 27.12085994474643,
+        "median": 86.6240142222903,
+        "p75": 130.52762990330754,
+        "max": 179.90995414750984,
+        "mean": 82.64185277173735
+      },
+      "hip_rotation_>=20deg": {
+        "n": 1496,
+        "min": 0.0,
+        "p25": 1.0803191864660378,
+        "median": 2.003599740866136,
+        "p75": 4.398684045141632,
+        "max": 180.0,
+        "mean": 17.79590241708033
+      },
+      "knees_bent_at_prep": {
+        "n": 1496,
+        "min": 15.989009358288348,
+        "p25": 147.15433651769024,
+        "median": 168.01407151909586,
+        "p75": 174.32280926216666,
+        "max": 179.9868093558452,
+        "mean": 153.31334382366524
+      },
+      "head_stable": {
+        "n": 1496,
+        "min": 0.0,
+        "p25": 0.01845842271784997,
+        "median": 0.030349147015058295,
+        "p75": 0.05328390354412716,
+        "max": 6.604179174639834,
+        "mean": 0.21734317966945446
+      }
+    },
+    "forehand_drive": {
+      "peak_wrist_above_shoulder": {
+        "n": 1143,
+        "min": -7.727370496632463,
+        "p25": -0.18750142212863977,
+        "median": 0.07971202966869385,
+        "p75": 0.3051066741763345,
+        "max": 2.5534069405745443,
+        "mean": 0.03897875554857852
+      },
+      "elbow_extension_>=160deg": {
+        "n": 1143,
+        "min": 0.12735048172791244,
+        "p25": 87.57680249152244,
+        "median": 125.56126213028685,
+        "p75": 156.11848565145687,
+        "max": 179.8576780960246,
+        "mean": 116.7319571478503
+      },
+      "hip_rotation_>=20deg": {
+        "n": 1143,
+        "min": 0.0,
+        "p25": 2.305099424767107,
+        "median": 5.560914406515735,
+        "p75": 10.505418859550474,
+        "max": 180.0,
+        "mean": 17.840412281610828
+      },
+      "knees_bent_at_prep": {
+        "n": 1143,
+        "min": 30.561519560985893,
+        "p25": 134.90606884530388,
+        "median": 156.47869108013396,
+        "p75": 171.07601647200778,
+        "max": 179.9856298509986,
+        "mean": 148.83366994005902
+      },
+      "head_stable": {
+        "n": 1143,
+        "min": 0.0,
+        "p25": 0.07793677533628364,
+        "median": 0.1052310530123441,
+        "p75": 0.14385559057961156,
+        "max": 3.9969151156625,
+        "mean": 0.1627134247517254
+      }
+    }
+  },
+  "n_train_clips_scanned": 4510
+}
