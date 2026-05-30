@@ -22,8 +22,49 @@ class SessionsScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
+            const SizedBox(height: 8),
+            _WeekHeader(
+              weekStart: weekStart,
+              onShift: (delta) {
+                final next = selected.add(Duration(days: 7 * delta));
+                ref.read(selectedDateProvider.notifier).state = DateTime(
+                  next.year,
+                  next.month,
+                  next.day,
+                );
+              },
+            ),
             const SizedBox(height: 16),
-            Center(
+            _DateStrip(dates: dates, selected: selected),
+            const SizedBox(height: 16),
+            const Expanded(child: _SessionList()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeekHeader extends StatelessWidget {
+  const _WeekHeader({required this.weekStart, required this.onShift});
+
+  final DateTime weekStart;
+  /// -1 = previous week, +1 = next week.
+  final void Function(int delta) onShift;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          _ArrowButton(
+            icon: Icons.chevron_left,
+            onTap: () => onShift(-1),
+            semanticsLabel: '이전 주',
+          ),
+          Expanded(
+            child: Center(
               child: Text(
                 '${weekLabel(weekStart)} 운동 신청',
                 style: const TextStyle(
@@ -32,13 +73,38 @@ class SessionsScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            _DateStrip(dates: dates, selected: selected),
-            const SizedBox(height: 16),
-            const Expanded(child: _SessionList()),
-          ],
-        ),
+          ),
+          _ArrowButton(
+            icon: Icons.chevron_right,
+            onTap: () => onShift(1),
+            semanticsLabel: '다음 주',
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _ArrowButton extends StatelessWidget {
+  const _ArrowButton({
+    required this.icon,
+    required this.onTap,
+    required this.semanticsLabel,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final String semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: 24),
+      color: theme.colorScheme.onSurface,
+      tooltip: semanticsLabel,
+      visualDensity: VisualDensity.compact,
     );
   }
 }
