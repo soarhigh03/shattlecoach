@@ -47,6 +47,12 @@ class AppRoute {
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 
+/// Minimum time the splash screen stays visible on cold start, regardless of
+/// how quickly prefs and auth resolve. Keeps the launch from feeling jarring.
+final splashMinDelayProvider = FutureProvider<void>((ref) async {
+  await Future<void>.delayed(const Duration(seconds: 1));
+});
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -54,10 +60,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     redirect: (context, state) {
       final onboardingAsync = ref.read(onboardingCompletedProvider);
+      final splashDelay = ref.read(splashMinDelayProvider);
       final user = ref.read(currentUserProvider);
 
-      // While prefs are loading, hold at splash.
-      if (onboardingAsync.isLoading) {
+      // Hold at splash until prefs are loaded AND the minimum splash time
+      // elapsed.
+      if (onboardingAsync.isLoading || splashDelay.isLoading) {
         return state.matchedLocation == AppRoute.splash
             ? null
             : AppRoute.splash;
@@ -174,6 +182,7 @@ class _RouterRefresh extends ChangeNotifier {
   _RouterRefresh(this._ref) {
     _ref.listen(authStateProvider, (_, _) => notifyListeners());
     _ref.listen(onboardingCompletedProvider, (_, _) => notifyListeners());
+    _ref.listen(splashMinDelayProvider, (_, _) => notifyListeners());
   }
   final Ref _ref;
 }
@@ -183,6 +192,14 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return const Scaffold(
+      backgroundColor: Colors.black,
+      body: SizedBox.expand(
+        child: Image(
+          image: AssetImage('assets/images/splash_v1.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
   }
 }
