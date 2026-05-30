@@ -50,6 +50,8 @@ class _DateStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
@@ -59,6 +61,7 @@ class _DateStrip extends ConsumerWidget {
               child: _DateCell(
                 date: d,
                 isSelected: _sameDay(d, selected),
+                isPast: d.isBefore(today),
                 onTap: () => ref.read(selectedDateProvider.notifier).state =
                     DateTime(d.year, d.month, d.day),
               ),
@@ -76,19 +79,23 @@ class _DateCell extends StatelessWidget {
   const _DateCell({
     required this.date,
     required this.isSelected,
+    required this.isPast,
     required this.onTap,
   });
 
   final DateTime date;
   final bool isSelected;
+  final bool isPast;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dow = const ['월', '화', '수', '목', '금', '토', '일'][date.weekday - 1];
+    final dimColor = theme.colorScheme.onSurface.withValues(alpha: 0.32);
+    final dimMuted = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
     return InkWell(
-      onTap: onTap,
+      onTap: isPast ? null : onTap,
       borderRadius: BorderRadius.circular(28),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -111,7 +118,9 @@ class _DateCell extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: isSelected
                       ? theme.colorScheme.surface
-                      : theme.colorScheme.onSurface,
+                      : isPast
+                          ? dimColor
+                          : theme.colorScheme.onSurface,
                 ),
               ),
             ),
@@ -121,7 +130,7 @@ class _DateCell extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurfaceVariant,
+                color: isPast ? dimMuted : theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
