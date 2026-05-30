@@ -255,6 +255,7 @@ class _ExecCodeFormState extends State<_ExecCodeForm> {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text('이번 분기 임원진 코드를 입력하세요.'),
         const SizedBox(height: 16),
