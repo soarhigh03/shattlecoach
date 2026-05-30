@@ -27,16 +27,29 @@ dependencies:
   # Config / env
   flutter_dotenv: ^5.2.1
 
-  # Typography
-  google_fonts: ^6.2.1
-
   # Permissions (camera, notifications)
   permission_handler: ^11.3.1
+
+  # SVG rendering (custom icons in nav bar etc.)
+  flutter_svg: ^2.0.10+1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+
+  # Generates iOS/Android launcher icons from assets/launcher/*.png
+  # Run: dart run flutter_launcher_icons
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: launcher_icon
+  ios: true
+  image_path: assets/launcher/icon.png
+  remove_alpha_ios: true
+  min_sdk_android: 21
+  adaptive_icon_background: "#D8F2FF"
+  adaptive_icon_foreground: assets/launcher/icon_foreground.png
 
 flutter:
   uses-material-design: true
@@ -44,10 +57,19 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/logo/
     - .env
 
-  # Custom fonts can be added later, e.g.:
-  # fonts:
-  #   - family: Pretendard
-  #     fonts:
-  #       - asset: assets/fonts/Pretendard-Regular.otf
+  # Pretendard variable font. The same file is referenced per weight so
+  # `FontWeight.wN00` picks the right axis instance without manual FontVariation.
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/PretendardVariable.ttf
+          weight: 400
+        - asset: assets/fonts/PretendardVariable.ttf
+          weight: 500
+        - asset: assets/fonts/PretendardVariable.ttf
+          weight: 600
+        - asset: assets/fonts/PretendardVariable.ttf
+          weight: 700
