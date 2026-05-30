@@ -30,8 +30,9 @@ class AppPalette {
   static const Color courtLine = Color(0xFFFFFFFF);
   static const Color courtSurface = Color(0xFF2F9E4F);
 
-  /// Active bottom-nav tint (icon + label).
-  static const Color navSelected = Color(0xFF2EB350);
+  /// Active bottom-nav tint (icon + label). Saturated sky blue picked to
+  /// harmonize with the logo's pale sky-blue fill (#D8F2FF) and pink accents.
+  static const Color navSelected = Color(0xFF0EA5E9);
 }
 
 class AppTheme {
