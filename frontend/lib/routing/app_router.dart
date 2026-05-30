@@ -18,6 +18,7 @@ import '../features/settings/sign_out_page.dart';
 import '../features/shell/home_shell.dart';
 import '../services/auth_service.dart';
 import '../services/onboarding_service.dart';
+import '../services/supabase_service.dart';
 
 /// Route paths — referenced both by the router and by navigation callers.
 class AppRoute {
@@ -58,7 +59,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final onboardingAsync = ref.read(onboardingCompletedProvider);
       final splashDelay = ref.read(splashMinDelayProvider);
-      final user = ref.read(currentUserProvider);
+      // Read the session directly from Supabase rather than through
+      // currentUserProvider — provider caching can lag a tick behind the
+      // auth stream emission after sign-in, leaving the redirect stuck on
+      // the old null value.
+      final user = SupabaseBootstrap.isInitialized
+          ? SupabaseBootstrap.client.auth.currentUser
+          : null;
 
       // Hold at splash until prefs are loaded AND the minimum splash time
       // elapsed.

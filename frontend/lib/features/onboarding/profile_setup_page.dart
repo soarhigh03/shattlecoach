@@ -60,61 +60,72 @@ class _ProfileSetupPageState extends ConsumerState<ProfileSetupPage> {
         children: [
           const _Header(),
           Expanded(
-            child: SafeArea(
-              top: false,
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Text(
-                              '진행하기 위해 몇 가지 정보가 필요해.',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Colors.black, width: 2),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const Text(
+                                '진행하기 위해 몇 가지 정보가 필요해.',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 28),
-                            const _RequiredLabel(label: '이름'),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _name,
-                              decoration: const InputDecoration(),
-                              textInputAction: TextInputAction.done,
-                              validator: (v) =>
-                                  (v == null || v.trim().isEmpty)
-                                      ? '이름을 입력해 주세요'
-                                      : null,
-                            ),
-                            const SizedBox(height: 24),
-                            const _RequiredLabel(label: '주 사용 손'),
-                            const SizedBox(height: 8),
-                            _HandSelector(
-                              value: ref.watch(profileDraftProvider).hand,
-                              onChanged: (h) => ref
-                                  .read(profileDraftProvider.notifier)
-                                  .update(
-                                    (d) => ProfileDraft(
-                                      displayName: d.displayName,
-                                      hand: h,
+                              const SizedBox(height: 28),
+                              const _RequiredLabel(label: '이름'),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _name,
+                                decoration: const InputDecoration(),
+                                textInputAction: TextInputAction.done,
+                                validator: (v) =>
+                                    (v == null || v.trim().isEmpty)
+                                        ? '이름을 입력해 주세요'
+                                        : null,
+                              ),
+                              const SizedBox(height: 24),
+                              const _RequiredLabel(label: '주 사용 손'),
+                              const SizedBox(height: 8),
+                              _HandSelector(
+                                value: ref.watch(profileDraftProvider).hand,
+                                onChanged: (h) => ref
+                                    .read(profileDraftProvider.notifier)
+                                    .update(
+                                      (d) => ProfileDraft(
+                                        displayName: d.displayName,
+                                        hand: h,
+                                      ),
                                     ),
-                                  ),
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-                      child: _StartButton(busy: _finishing, onPressed: _submit),
-                    ),
-                  ],
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                        child: _StartButton(
+                          busy: _finishing,
+                          onPressed: _submit,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -131,7 +142,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 320,
+      height: 400,
       width: double.infinity,
       child: ClipRect(
         child: Stack(
@@ -141,7 +152,7 @@ class _Header extends StatelessWidget {
             ),
             Positioned(
               top: 20,
-              left: -40,
+              left: 0,
               child: Transform.flip(
                 flipX: true,
                 child: Image.asset(
