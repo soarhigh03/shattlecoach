@@ -106,7 +106,7 @@ class _PostList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(postListProvider(kind));
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const _SkeletonList(),
       error: (e, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -244,6 +244,118 @@ class _PostTile extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SkeletonList extends StatefulWidget {
+  const _SkeletonList();
+
+  @override
+  State<_SkeletonList> createState() => _SkeletonListState();
+}
+
+class _SkeletonListState extends State<_SkeletonList>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.only(top: 4, bottom: 96),
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 6,
+      separatorBuilder: (_, _) => Divider(
+        height: 1,
+        color: Theme.of(context).colorScheme.outlineVariant,
+      ),
+      itemBuilder: (_, i) => _SkeletonTile(pulse: _pulse, withThumb: i.isEven),
+    );
+  }
+}
+
+class _SkeletonTile extends StatelessWidget {
+  const _SkeletonTile({required this.pulse, required this.withThumb});
+
+  final Animation<double> pulse;
+  final bool withThumb;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _SkeletonBox(
+                      pulse: pulse,
+                      width: 52,
+                      height: 20,
+                      radius: 999,
+                    ),
+                    const SizedBox(width: 8),
+                    _SkeletonBox(pulse: pulse, width: 140, height: 16),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _SkeletonBox(pulse: pulse, width: 200, height: 12),
+              ],
+            ),
+          ),
+          if (withThumb) ...[
+            const SizedBox(width: 12),
+            _SkeletonBox(pulse: pulse, width: 56, height: 56, radius: 6),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  const _SkeletonBox({
+    required this.pulse,
+    required this.width,
+    required this.height,
+    this.radius = 4,
+  });
+
+  final Animation<double> pulse;
+  final double width;
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedBuilder(
+      animation: pulse,
+      builder: (_, _) {
+        final base = theme.colorScheme.surfaceContainerHighest;
+        final highlight = theme.colorScheme.surface;
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: Color.lerp(base, highlight, pulse.value * 0.6),
+            borderRadius: BorderRadius.circular(radius),
+          ),
+        );
+      },
     );
   }
 }
