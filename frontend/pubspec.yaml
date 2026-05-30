@@ -33,6 +33,9 @@ dependencies:
   # SVG rendering (custom icons in nav bar etc.)
   flutter_svg: ^2.0.10+1
 
+  # Photo picking (post image attachments)
+  image_picker: ^1.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
