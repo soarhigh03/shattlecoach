@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/ai_coach/ai_coach_screen.dart';
+import '../features/ai_coach/trim_screen.dart';
 import '../features/equipment/equipment_screen.dart';
 import '../features/equipment/post_compose_screen.dart';
 import '../features/equipment/post_detail_screen.dart';
@@ -34,6 +35,7 @@ class AppRoute {
 
   static const home = '/home';
   static const aiCoach = '/home/ai-coach';
+  static const aiCoachTrim = '/home/ai-coach/trim';
   static const report = '/home/report';
   static const sessions = '/home/sessions';
   static const equipment = '/home/equipment';
@@ -142,6 +144,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoute.settingsLicenses,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (_, _) => const LicensesPage(),
+      ),
+      GoRoute(
+        path: AppRoute.aiCoachTrim,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, state) {
+          final args = state.extra;
+          if (args is! TrimScreenArgs) {
+            return const Scaffold(
+              body: Center(child: Text('잘못된 접근이에요.')),
+            );
+          }
+          return TrimScreen(args: args);
+        },
       ),
       GoRoute(
         path: AppRoute.equipmentCompose,

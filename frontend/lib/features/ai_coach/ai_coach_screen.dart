@@ -2,11 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../routing/app_router.dart';
 import 'ai_coach_models.dart';
 import 'ai_coach_providers.dart';
+import 'trim_screen.dart';
 
 class AiCoachScreen extends ConsumerStatefulWidget {
   const AiCoachScreen({super.key});
@@ -19,6 +22,11 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
   File? _inputVideo;
   VideoPlayerController? _inputController;
 
+  /// Selected trim range (set via the trim screen). When non-null, the input
+  /// preview loops within `[_trimStart, _trimEnd]` instead of the full clip.
+  Duration? _trimStart;
+  Duration? _trimEnd;
+
   AiCoachAnalysis? _currentResult;
   VideoPlayerController? _outputController;
 
@@ -26,6 +34,7 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
 
   @override
   void dispose() {
+    _inputController?.removeListener(_enforceTrimLoop);
     _inputController?.dispose();
     _outputController?.dispose();
     super.dispose();
@@ -38,17 +47,23 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
     final file = File(picked.path);
     final controller = VideoPlayerController.file(file);
     await controller.initialize();
-    await controller.setLooping(true);
+    // Disable the built-in loop — we run our own loop based on the trim range
+    // so the controller doesn't bounce back to 0 mid-cut.
+    await controller.setLooping(false);
     if (!mounted) {
       await controller.dispose();
       return;
     }
     final prevInput = _inputController;
     final prevOutput = _outputController;
+    prevInput?.removeListener(_enforceTrimLoop);
+    controller.addListener(_enforceTrimLoop);
     setState(() {
       _inputVideo = file;
       _inputController = controller;
-      // Clear any prior result — the user picked a new clip.
+      // New clip → drop any prior trim range and result.
+      _trimStart = null;
+      _trimEnd = null;
       _currentResult = null;
       _outputController = null;
     });
@@ -56,11 +71,37 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
     await prevOutput?.dispose();
   }
 
-  void _trimVideo() {
-    // Trim flow is not built yet — the ML side will provide the cut points.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('영상 자르기는 곧 추가될 예정이에요.')),
+  /// Keeps the preview inside `[_trimStart, _trimEnd]`. When playback crosses
+  /// the end handle, seek back to the start; emulates a looped range without
+  /// relying on `setLooping`.
+  void _enforceTrimLoop() {
+    final c = _inputController;
+    final start = _trimStart;
+    final end = _trimEnd;
+    if (c == null || start == null || end == null) return;
+    if (!c.value.isPlaying) return;
+    if (c.value.position >= end) {
+      c.seekTo(start);
+    }
+  }
+
+  Future<void> _trimVideo() async {
+    final file = _inputVideo;
+    if (file == null) return;
+    final result = await context.push<TrimResult>(
+      AppRoute.aiCoachTrim,
+      extra: TrimScreenArgs(
+        file: file,
+        initialStart: _trimStart,
+        initialEnd: _trimEnd,
+      ),
     );
+    if (!mounted || result == null) return;
+    setState(() {
+      _trimStart = result.start;
+      _trimEnd = result.end;
+    });
+    await _inputController?.seekTo(result.start);
   }
 
   Future<void> _runCoaching() async {
@@ -122,6 +163,10 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
                 controller: _inputController,
                 onTap: _pickVideo,
               ),
+              if (_trimStart != null && _trimEnd != null) ...[
+                const SizedBox(height: 8),
+                _TrimRangeLabel(start: _trimStart!, end: _trimEnd!),
+              ],
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -442,5 +487,52 @@ class _SecondaryButton extends StatelessWidget {
       ),
       child: Text(label),
     );
+  }
+}
+
+class _TrimRangeLabel extends StatelessWidget {
+  const _TrimRangeLabel({required this.start, required this.end});
+
+  final Duration start;
+  final Duration end;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final len = end - start;
+    return Row(
+      children: [
+        Icon(
+          Icons.content_cut,
+          size: 14,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '${_fmt(start)} → ${_fmt(end)}',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '(${(len.inMilliseconds / 1000).toStringAsFixed(1)}초)',
+          style: TextStyle(
+            fontSize: 12,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _fmt(Duration d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final m = d.inMinutes;
+    final s = d.inSeconds % 60;
+    final cs = (d.inMilliseconds ~/ 10) % 100;
+    return '${two(m)}:${two(s)}.${two(cs)}';
   }
 }
