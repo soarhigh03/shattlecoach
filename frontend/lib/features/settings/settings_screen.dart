@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../routing/app_router.dart';
 import '../../services/auth_service.dart';
 import '../../services/onboarding_service.dart';
+import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../widgets/app_dialog.dart';
 import '../equipment/post_providers.dart';
@@ -17,6 +18,10 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
+    final profileName = ref.watch(myProfileProvider).valueOrNull?.name;
+    final displayName = (profileName != null && profileName.isNotEmpty)
+        ? profileName
+        : user?.userMetadata?['full_name'] as String?;
 
     return Scaffold(
       body: SafeArea(
@@ -26,10 +31,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             const _ScreenHeader(),
             const SizedBox(height: 20),
-            _ProfileRow(
-              email: user?.email,
-              displayName: user?.userMetadata?['full_name'] as String?,
-            ),
+            _ProfileRow(email: user?.email, displayName: displayName),
             const SizedBox(height: 20),
             const _SectionDivider(),
             const _SectionHeader(text: '계정 정보'),

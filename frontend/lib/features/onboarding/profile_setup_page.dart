@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../routing/app_router.dart';
 import '../../services/onboarding_service.dart';
+import '../../services/profile_service.dart';
 
 enum DominantHand { right, left }
 
@@ -47,8 +48,22 @@ class _ProfileSetupPageState extends ConsumerState<ProfileSetupPage> {
     setState(() => _finishing = true);
     final draft = ref.read(profileDraftProvider);
     draft.displayName = _name.text.trim();
+    try {
+      await ref.read(profileServiceProvider).completeOnboarding(
+            name: draft.displayName,
+            handedness: draft.hand == DominantHand.left ? 'left' : 'right',
+          );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _finishing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('프로필 저장에 실패했어요: $e')),
+      );
+      return;
+    }
     await ref.read(onboardingServiceProvider).markCompleted();
     ref.invalidate(onboardingCompletedProvider);
+    ref.invalidate(myProfileProvider);
     if (!mounted) return;
     context.go(AppRoute.aiCoach);
   }
