@@ -27,9 +27,6 @@ dependencies:
   # Config / env
   flutter_dotenv: ^5.2.1
 
-  # Typography
-  google_fonts: ^6.2.1
-
   # Permissions (camera, notifications)
   permission_handler: ^11.3.1
 
@@ -49,8 +46,16 @@ flutter:
     - assets/icons/
     - .env
 
-  # Custom fonts can be added later, e.g.:
-  # fonts:
-  #   - family: Pretendard
-  #     fonts:
-  #       - asset: assets/fonts/Pretendard-Regular.otf
+  # Pretendard variable font. The same file is referenced per weight so
+  # `FontWeight.wN00` picks the right axis instance without manual FontVariation.
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/PretendardVariable.ttf
+          weight: 400
+        - asset: assets/fonts/PretendardVariable.ttf
+          weight: 500
+        - asset: assets/fonts/PretendardVariable.ttf
+          weight: 600
+        - asset: assets/fonts/PretendardVariable.ttf
+          weight: 700

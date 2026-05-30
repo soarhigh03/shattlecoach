@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Centralized theme tokens for Shattlecoach.
 ///
@@ -30,10 +29,15 @@ class AppPalette {
   // Court tones (used in custom paint backgrounds, AI Coach screen, etc.)
   static const Color courtLine = Color(0xFFFFFFFF);
   static const Color courtSurface = Color(0xFF2F9E4F);
+
+  /// Active bottom-nav tint (icon + label).
+  static const Color navSelected = Color(0xFF2EB350);
 }
 
 class AppTheme {
   AppTheme._();
+
+  static const String _fontFamily = 'Pretendard';
 
   static ThemeData get light => _build(_lightScheme, Brightness.light);
   static ThemeData get dark => _build(_darkScheme, Brightness.dark);
@@ -98,19 +102,23 @@ class AppTheme {
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: scheme.surface,
+      fontFamily: _fontFamily,
     );
 
     return base.copyWith(
-      textTheme: GoogleFonts.interTextTheme(
-        base.textTheme,
-      ).apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface),
+      textTheme: base.textTheme.apply(
+        fontFamily: _fontFamily,
+        bodyColor: scheme.onSurface,
+        displayColor: scheme.onSurface,
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 1,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(
+          fontFamily: _fontFamily,
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: scheme.onSurface,
@@ -118,21 +126,20 @@ class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: scheme.surface,
-        indicatorColor: scheme.primaryContainer,
+        indicatorColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return GoogleFonts.inter(
+          return TextStyle(
+            fontFamily: _fontFamily,
             fontSize: 12,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+            color: selected ? AppPalette.navSelected : scheme.onSurfaceVariant,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
-            color: selected
-                ? scheme.onPrimaryContainer
-                : scheme.onSurfaceVariant,
+            color: selected ? AppPalette.navSelected : scheme.onSurfaceVariant,
             size: 24,
           );
         }),
@@ -145,7 +152,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
+            fontFamily: _fontFamily,
             fontSize: 16,
             fontWeight: FontWeight.w700,
           ),
@@ -158,7 +166,8 @@ class AppTheme {
             borderRadius: BorderRadius.circular(14),
           ),
           side: BorderSide(color: scheme.outline),
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
+            fontFamily: _fontFamily,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
