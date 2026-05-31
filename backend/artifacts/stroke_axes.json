@@ -1,0 +1,27 @@
+{
+  "_doc": "Per-stroke relevance config for the 3-axis scoring system (posture/speed/step). Research basis: BWF Coach Manual Lv1, Tony Grice 'Badminton: Steps to Success', Badminton Insight. Decided 2026-05-24 after observing the system advised 'increase active footwork' on a short serve, which is illegal per BWF service rules. The 'axes' list controls which axes appear in the final score JSON; 'reasons' explains why each dropped axis was excluded (shown to the user as a tooltip and fed to the LLM as a guardrail).",
+  "high_clear": {
+    "axes": ["posture", "speed", "step"],
+    "reasons": {}
+  },
+  "short_serve": {
+    "axes": ["posture"],
+    "reasons": {
+      "speed": "서브는 컨트롤된 동작입니다. 스윙 속도가 빠르면 오히려 셔틀이 높이 떠서 상대 공격 기회를 줍니다. 속도는 평가 기준이 아닙니다.",
+      "step": "BWF 규정상 서브 중에는 양 발이 코트 표면에 고정되어야 합니다. 풋워크를 평가하면 규정 위반을 권장하게 됩니다."
+    }
+  },
+  "forehand_drive": {
+    "axes": ["posture", "speed"],
+    "reasons": {
+      "step": "포핸드 드라이브에서 발 움직임은 임팩트 *전* 스플릿스텝과 임팩트 순간의 step-into-contact 한 번뿐입니다. 클립 윈도우 안의 '활발한 풋워크'를 측정하면 false positive가 발생합니다."
+    }
+  },
+  "unknown_ood": {
+    "axes": ["posture"],
+    "reasons": {
+      "speed": "OOD(학습 분포 밖)로 분류된 동작은 percentile 비교를 위한 reference distribution이 없습니다. 속도 평가는 의미 없습니다.",
+      "step": "OOD 동작은 footwork percentile 비교 기준이 없습니다. 풋워크 평가는 의미 없습니다."
+    }
+  }
+}

@@ -22,6 +22,10 @@ class SettingsScreen extends ConsumerWidget {
     final displayName = (profileName != null && profileName.isNotEmpty)
         ? profileName
         : user?.userMetadata?['full_name'] as String?;
+    final isAnon = user?.isAnonymous ?? false;
+    // Anonymous users have no email — surface the TA-mode session label
+    // instead of an empty string so the row doesn't look broken.
+    final subtitle = isAnon ? '채점용 게스트 세션' : user?.email;
 
     return Scaffold(
       body: SafeArea(
@@ -31,7 +35,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             const _ScreenHeader(),
             const SizedBox(height: 20),
-            _ProfileRow(email: user?.email, displayName: displayName),
+            _ProfileRow(email: subtitle, displayName: displayName),
             const SizedBox(height: 20),
             const _SectionDivider(),
             const _SectionHeader(text: '계정 정보'),

@@ -12,3 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Exception: a shared debug keystore is intentionally committed so all
+# contributors' debug APKs sign with the same SHA-1 (needed for Google
+# Sign-In to work from any machine without re-registering each dev's SHA-1).
+# Safe because this is a class project with no release/Play distribution.
+!keystore/debug.keystore
