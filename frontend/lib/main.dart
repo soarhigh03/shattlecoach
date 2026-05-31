@@ -9,12 +9,10 @@ import 'services/supabase_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Hide the OS status bar so onboarding screens render fully edge-to-edge.
-  // HomeShell restores it once the user reaches the tabbed home shell.
-  await SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.manual,
-    overlays: [SystemUiOverlay.bottom],
-  );
+  // Hide both system bars (status + bottom nav) so the app renders fully
+  // edge-to-edge. Sticky immersive re-hides them automatically after a swipe.
+  // The Android side also pins this from the splash screen via MainActivity.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   try {
     await dotenv.load(fileName: '.env');
