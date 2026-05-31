@@ -111,14 +111,15 @@ create trigger trg_profiles_updated         before update on public.profiles    
 create trigger trg_workout_sessions_updated before update on public.workout_sessions for each row execute function public.set_updated_at();
 create trigger trg_posts_updated            before update on public.posts            for each row execute function public.set_updated_at();
 
--- Auto-create profile on Google sign-up.
+-- Auto-create profile on sign-up (Google or anonymous). Anonymous users have
+-- NULL email, so we coalesce to '' to satisfy the profiles.email NOT NULL.
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   insert into public.profiles (id, email, name)
   values (
     new.id,
-    new.email,
+    coalesce(new.email, ''),
     coalesce(new.raw_user_meta_data->>'full_name',
              new.raw_user_meta_data->>'name', '')
   );
