@@ -6,6 +6,8 @@ On-device badminton form coach. SNU Mobile Computing and Its Applications
 Record a 5-second swing, get a per-criterion form score, an annotated impact
 frame, and a short Korean coaching note — all computed on the phone, no server.
 
+**Demo video:** https://youtube.com/shorts/_lbC8qLcBfQ
+
 ---
 
 ## Layout
