@@ -1,0 +1,89 @@
+// On-device ML: native frame extractor (iOS).
+// Mirrors android/.../MainActivity.kt — same channel name and method
+// signatures so frontend/lib/ml/pose_extractor.dart works unchanged.
+
+import AVFoundation
+import Flutter
+import UIKit
+
+enum FrameExtractor {
+    static let channelName = "com.shattlecoach/frame_extractor"
+
+    static func register(with messenger: FlutterBinaryMessenger) {
+        let channel = FlutterMethodChannel(name: channelName, binaryMessenger: messenger)
+        channel.setMethodCallHandler { call, result in
+            switch call.method {
+            case "getFrame":
+                guard let args = call.arguments as? [String: Any],
+                      let path = args["path"] as? String,
+                      let timeMs = (args["timeMs"] as? NSNumber)?.int64Value else {
+                    result(FlutterError(code: "BAD_ARGS",
+                                        message: "missing path/timeMs",
+                                        details: nil))
+                    return
+                }
+                let quality = (args["jpegQuality"] as? NSNumber)?.intValue ?? 85
+                do {
+                    let data = try extractFrameJpeg(path: path, timeMs: timeMs, quality: quality)
+                    result(FlutterStandardTypedData(bytes: data))
+                } catch {
+                    result(FlutterError(code: "EXTRACT_FAIL",
+                                        message: "\(type(of: error)): \(error.localizedDescription)",
+                                        details: nil))
+                }
+
+            case "getDurationMs":
+                guard let args = call.arguments as? [String: Any],
+                      let path = args["path"] as? String else {
+                    result(FlutterError(code: "BAD_ARGS",
+                                        message: "missing path",
+                                        details: nil))
+                    return
+                }
+                do {
+                    let ms = try durationMs(path: path)
+                    result(NSNumber(value: ms))
+                } catch {
+                    result(FlutterError(code: "DURATION_FAIL",
+                                        message: "\(error.localizedDescription)",
+                                        details: nil))
+                }
+
+            default:
+                result(FlutterMethodNotImplemented)
+            }
+        }
+    }
+
+    private static func extractFrameJpeg(path: String, timeMs: Int64, quality: Int) throws -> Data {
+        let url = URL(fileURLWithPath: path)
+        let asset = AVURLAsset(url: url)
+        let generator = AVAssetImageGenerator(asset: asset)
+        // Apply track transform so portrait clips don't come out rotated 90°.
+        generator.appliesPreferredTrackTransform = true
+        // 50ms tolerance: pure .zero would force decoding back to the previous
+        // keyframe on every call — slow on iOS for compressed H.264. 50ms is
+        // well below one frame at 15fps so we still map to the right pose frame.
+        let tolerance = CMTime(value: 50, timescale: 1000)
+        generator.requestedTimeToleranceBefore = tolerance
+        generator.requestedTimeToleranceAfter = tolerance
+
+        let time = CMTime(value: timeMs, timescale: 1000)
+        var actualTime = CMTime.zero
+        let cgImage = try generator.copyCGImage(at: time, actualTime: &actualTime)
+        let uiImage = UIImage(cgImage: cgImage)
+        guard let jpeg = uiImage.jpegData(compressionQuality: CGFloat(quality) / 100.0) else {
+            throw NSError(domain: "FrameExtractor", code: -1,
+                          userInfo: [NSLocalizedDescriptionKey: "jpegData returned nil"])
+        }
+        return jpeg
+    }
+
+    private static func durationMs(path: String) throws -> Int64 {
+        let url = URL(fileURLWithPath: path)
+        let asset = AVURLAsset(url: url)
+        let duration = asset.duration
+        guard duration.isNumeric, !duration.isIndefinite else { return 0 }
+        return Int64(CMTimeGetSeconds(duration) * 1000.0)
+    }
+}
