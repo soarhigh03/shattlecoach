@@ -1,9 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:video_player/video_player.dart';
 
 import '../ai_coach/ai_coach_models.dart';
 import '../ai_coach/ai_coach_providers.dart';
+import '../ai_coach/ai_coach_widgets.dart';
 
 class ReportScreen extends ConsumerStatefulWidget {
   const ReportScreen({super.key});
@@ -405,6 +407,10 @@ class _DetailPanel extends StatelessWidget {
   String _pad(int n) => n.toString().padLeft(2, '0');
 }
 
+/// One analysis as a collapsed row in the day detail. Tapping expands the
+/// card in place to show the full per-axis stars, "잘한 점" bullets, and the
+/// coaching paragraph — matching the AI coach result screen but inline so the
+/// user doesn't lose calendar context.
 class _AnalysisCard extends StatefulWidget {
   const _AnalysisCard({required this.analysis, required this.index});
 
@@ -416,114 +422,50 @@ class _AnalysisCard extends StatefulWidget {
 }
 
 class _AnalysisCardState extends State<_AnalysisCard> {
-  VideoPlayerController? _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    final out = widget.analysis.outputVideo ?? widget.analysis.inputVideo;
-    final c = VideoPlayerController.file(out);
-    c.initialize().then((_) {
-      if (!mounted) {
-        c.dispose();
-        return;
-      }
-      setState(() => _controller = c);
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final a = widget.analysis;
-    final feedback = a.feedback;
     final time = '${_pad(a.createdAt.hour)}:${_pad(a.createdAt.minute)}';
+    final avg = a.averageStars;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                '#${widget.index}',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                time,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              if (a.outputVideo == null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '결과 영상 준비 중',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurfaceVariant,
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  _CardThumbnail(image: a.impactImage),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _CardMeta(
+                      index: widget.index,
+                      time: time,
+                      strokeKo: a.strokeLabelKo,
+                      averageStars: avg,
                     ),
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                color: theme.colorScheme.surfaceContainerHighest,
-                child: _controller != null && _controller!.value.isInitialized
-                    ? _PreviewSurface(controller: _controller!)
-                    : const Center(
-                        child: SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            feedback ?? '텍스트 피드백 준비 중',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              height: 1.45,
-              fontStyle: feedback == null ? FontStyle.italic : null,
-              color: feedback == null
-                  ? theme.colorScheme.onSurfaceVariant
-                  : theme.colorScheme.onSurface,
-            ),
-          ),
+          if (_expanded) _CardDetailBody(analysis: a),
         ],
       ),
     );
@@ -532,70 +474,175 @@ class _AnalysisCardState extends State<_AnalysisCard> {
   String _pad(int n) => n.toString().padLeft(2, '0');
 }
 
-class _PreviewSurface extends StatefulWidget {
-  const _PreviewSurface({required this.controller});
-
-  final VideoPlayerController controller;
-
-  @override
-  State<_PreviewSurface> createState() => _PreviewSurfaceState();
-}
-
-class _PreviewSurfaceState extends State<_PreviewSurface> {
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_onTick);
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_onTick);
-    super.dispose();
-  }
-
-  void _onTick() {
-    if (mounted) setState(() {});
-  }
-
-  void _toggle() {
-    final c = widget.controller;
-    if (c.value.isPlaying) {
-      c.pause();
-    } else {
-      c.play();
-    }
-  }
+class _CardThumbnail extends StatelessWidget {
+  const _CardThumbnail({required this.image});
+  final Uint8List? image;
 
   @override
   Widget build(BuildContext context) {
-    final c = widget.controller;
-    final showOverlay = !c.value.isPlaying;
-    return GestureDetector(
-      onTap: _toggle,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          FittedBox(
-            fit: BoxFit.cover,
-            clipBehavior: Clip.hardEdge,
-            child: SizedBox(
-              width: c.value.size.width,
-              height: c.value.size.height,
-              child: VideoPlayer(c),
-            ),
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 88,
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: ColoredBox(
+            color: theme.colorScheme.surfaceContainerHighest,
+            child: image == null
+                ? Center(
+                    child: Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                : Image.memory(
+                    image!,
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                  ),
           ),
-          if (showOverlay)
-            const ColoredBox(
-              color: Color(0x33000000),
-              child: Center(
-                child: Icon(
-                  Icons.play_arrow_rounded,
-                  size: 44,
-                  color: Colors.white,
-                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardMeta extends StatelessWidget {
+  const _CardMeta({
+    required this.index,
+    required this.time,
+    required this.strokeKo,
+    required this.averageStars,
+  });
+
+  final int index;
+  final String time;
+  final String strokeKo;
+  final double? averageStars;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Text(
+              '#$index',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
               ),
             ),
+            const SizedBox(width: 8),
+            Text(
+              time,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          strokeKo,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Icon(
+              Icons.star_rounded,
+              size: 16,
+              color: theme.colorScheme.secondary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              averageStars == null
+                  ? '— / 5'
+                  : '${averageStars!.toStringAsFixed(1)} / 5',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CardDetailBody extends StatelessWidget {
+  const _CardDetailBody({required this.analysis});
+  final AiCoachAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final image = analysis.impactImage;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 16),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 14),
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: ColoredBox(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: image == null
+                    ? Center(
+                        child: Text(
+                          '임팩트 사진 없음',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      )
+                    : Image.memory(
+                        image,
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                      ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          StarsBlock(analysis: analysis),
+          if (analysis.positives.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            const SectionHeader('잘한 점'),
+            const SizedBox(height: 8),
+            for (final p in analysis.positives) PositiveLine(p),
+          ],
+          const SizedBox(height: 18),
+          const SectionHeader('코칭'),
+          const SizedBox(height: 8),
+          Text(
+            analysis.coachingParagraph.isEmpty
+                ? '코칭 문구가 없어요.'
+                : analysis.coachingParagraph,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              height: 1.55,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
         ],
       ),
     );
