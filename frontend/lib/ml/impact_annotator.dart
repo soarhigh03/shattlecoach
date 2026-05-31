@@ -151,6 +151,7 @@ Future<AnnotationResult> annotateImpactOffline({
   required double detectionRate,
   String strokeLabel = '',
   double fps = 15.0,
+  int startMs = 0,
 }) async {
   if (detectionRate < 0.5) {
     return AnnotationResult(null, -1,
@@ -165,7 +166,7 @@ Future<AnnotationResult> annotateImpactOffline({
   final int wristIdx = _dominantWristIdx(kpts);
   final int frameIdx = _impactFrame(kpts, wristIdx);
 
-  final Uint8List? jpeg = await fetchFrameJpegAtIndex(videoPath, frameIdx, fps: fps);
+  final Uint8List? jpeg = await fetchFrameJpegAtIndex(videoPath, frameIdx, fps: fps, startMs: startMs);
   if (jpeg == null || jpeg.length < 100) {
     return AnnotationResult(null, frameIdx, 'could not re-read impact frame $frameIdx');
   }

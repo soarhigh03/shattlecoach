@@ -207,13 +207,18 @@ Future<int> _videoDurationMs(String path) async {
 }
 
 /// Public: re-fetch a single frame's JPEG by FRAME INDEX (same indexing
-/// extractPose uses: timeMs = index * round(1000/fps)). Used by the offline
-/// annotator (D2) to draw on the impact frame. Returns null on failure.
+/// extractPose uses: timeMs = startMs + index * round(1000/fps)). Used by
+/// the offline annotator (D2) to draw on the impact frame. Returns null on
+/// failure.
+///
+/// [startMs] must match the value passed to [extractPose] so the index→time
+/// mapping lines up — otherwise the annotator would redraw the wrong frame
+/// when the caller analysed a trimmed range.
 Future<Uint8List?> fetchFrameJpegAtIndex(String path, int frameIndex,
-    {double fps = 15.0, int quality = 90}) async {
+    {double fps = 15.0, int quality = 90, int startMs = 0}) async {
   final int frameStepMs = (1000.0 / fps).round();
   try {
-    return await _getFrameJpeg(path, frameIndex * frameStepMs, quality: quality);
+    return await _getFrameJpeg(path, startMs + frameIndex * frameStepMs, quality: quality);
   } catch (_) {
     return null;
   }
@@ -234,9 +239,17 @@ Future<Uint8List?> _getFrameJpeg(String path, int timeMs, {int quality = 85}) as
 /// Extracts pose from [videoPath] using a 3-isolate MoveNet worker pool.
 /// Pipeline: native frame fetch → isolate preproc → worker pool MoveNet.
 /// All 3 stages overlap; total throughput limited by slowest stage.
+///
+/// When [startMs] / [endMs] are passed, only frames inside that window are
+/// sampled (used to honour the trim selection from the AI coach screen).
+/// Frame indices in [ExtractionResult] are relative to the trim start, so
+/// any later frame-fetch must pass the same [startMs] (see
+/// [fetchFrameJpegAtIndex]).
 Future<ExtractionResult> extractPose(
   String videoPath, {
   double fps = 15.0,
+  int? startMs,
+  int? endMs,
   void Function(int done, int total)? onProgress,
 }) async {
   final Stopwatch sw = Stopwatch()..start();
@@ -250,8 +263,14 @@ Future<ExtractionResult> extractPose(
   if (durMs <= 0) {
     throw Exception('[step:duration] video duration zero: $videoPath');
   }
+  final int sMs = (startMs ?? 0).clamp(0, durMs);
+  final int eMs = (endMs ?? durMs).clamp(sMs, durMs);
+  final int windowMs = eMs - sMs;
+  if (windowMs <= 0) {
+    throw Exception('[step:duration] empty trim window: ${sMs}ms..${eMs}ms');
+  }
   final int frameStepMs = (1000.0 / fps).round();
-  final int nFrames = (durMs / frameStepMs).floor();
+  final int nFrames = (windowMs / frameStepMs).floor();
 
   _WorkerPool pool;
   try {
@@ -267,7 +286,7 @@ Future<ExtractionResult> extractPose(
   int doneCount = 0;
 
   Future<void> processFrame(int i) async {
-    final int tMs = i * frameStepMs;
+    final int tMs = sMs + i * frameStepMs;
     Uint8List? jpeg;
     try {
       jpeg = await _getFrameJpeg(videoPath, tMs);

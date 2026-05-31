@@ -12,6 +12,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 /// Groq endpoint + model. Mirrors backend/scripts/score_server.py.
@@ -20,8 +21,22 @@ const String kGroqModel = 'llama-3.1-8b-instant';
 
 /// Build-time injected key. Empty unless `--dart-define=GROQ_API_KEY=...` was
 /// passed at build time. const so it's tree-shaken into the binary.
-const String kGroqApiKey =
+const String _kBuildTimeGroqApiKey =
     String.fromEnvironment('GROQ_API_KEY', defaultValue: '');
+
+/// Resolve the Groq key from either the build-time const (preferred, tree-
+/// shaken) or — for local dev — `GROQ_API_KEY` in the bundled `.env`. Returns
+/// the empty string if neither is set; callers then fall back to the rulebook.
+String _resolvedGroqApiKey() {
+  final String build = _kBuildTimeGroqApiKey.trim();
+  if (build.isNotEmpty) return build;
+  try {
+    return (dotenv.env['GROQ_API_KEY'] ?? '').trim();
+  } catch (_) {
+    // dotenv not initialised — fine, just means no runtime fallback available.
+    return '';
+  }
+}
 
 /// Result of an LLM smoothing attempt.
 class LlmResult {
@@ -58,9 +73,9 @@ class LlmResult {
 class GroqCoach {
   GroqCoach._();
 
-  /// Whether a build-time key is present. UI/pipeline can use this to decide
-  /// whether to even attempt a network call.
-  static bool get hasKey => kGroqApiKey.trim().isNotEmpty;
+  /// Whether a Groq key is available (build-time const or runtime `.env`).
+  /// UI/pipeline can use this to decide whether to even attempt a network call.
+  static bool get hasKey => _resolvedGroqApiKey().isNotEmpty;
 
   /// Ask Groq to stitch [sentenceTexts] (already-selected rulebook sentences)
   /// into one polite Korean paragraph. [forbidden] lists words the model must
@@ -70,9 +85,9 @@ class GroqCoach {
     List<String> forbidden = const <String>[],
     Duration timeout = const Duration(seconds: 8),
   }) async {
-    final String key = kGroqApiKey.trim();
+    final String key = _resolvedGroqApiKey();
     if (key.isEmpty) {
-      return LlmResult.skip('GROQ_API_KEY not set at build time');
+      return LlmResult.skip('GROQ_API_KEY not set (build-time or .env)');
     }
     final List<String> bullets =
         sentenceTexts.map((String s) => s.trim()).where((String s) => s.isNotEmpty).toList();

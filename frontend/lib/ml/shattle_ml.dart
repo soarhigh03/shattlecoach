@@ -79,6 +79,8 @@ class ShattleMl {
     required String stroke,
     double fps = 15.0,
     bool enableLlm = true,
+    int? startMs,
+    int? endMs,
     void Function(String status)? onStatus,
   }) async {
     assert(kShattleStrokes.contains(stroke), 'stroke must be one of $kShattleStrokes');
@@ -87,6 +89,7 @@ class ShattleMl {
     onStatus?.call('자세 추출 중…');
     final Stopwatch sw = Stopwatch()..start();
     final ExtractionResult ext = await extractPose(videoPath, fps: fps,
+        startMs: startMs, endMs: endMs,
         onProgress: (int done, int total) {
       if (done % 4 == 0) onStatus?.call('자세 추출: $done / $total 프레임');
     });
@@ -143,7 +146,8 @@ class ShattleMl {
         videoPath: videoPath, kpts: kpts,
         postureCriteria: (payload['posture_criteria'] as List<dynamic>)
             .map((dynamic c) => c as Map<String, dynamic>).toList(),
-        detectionRate: ext.detectionRate, strokeLabel: stroke, fps: fps);
+        detectionRate: ext.detectionRate, strokeLabel: stroke, fps: fps,
+        startMs: startMs ?? 0);
       payload['annotated_impact_png_base64'] = ann.pngBase64;
       payload['best_frame_index'] = ann.frameIndex;
       payload['annotation_skip_reason'] = ann.skipReason;
