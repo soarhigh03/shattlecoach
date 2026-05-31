@@ -213,8 +213,9 @@ int _countPeaks(List<double> speeds, double minProm) {
   for (int i = 1; i < speeds.length - 1; i++) {
     if (speeds[i] > speeds[i - 1] &&
         speeds[i] > speeds[i + 1] &&
-        speeds[i] > thr)
+        speeds[i] > thr) {
       peaks++;
+    }
   }
   return peaks;
 }

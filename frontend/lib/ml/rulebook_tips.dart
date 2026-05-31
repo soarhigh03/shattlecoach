@@ -85,8 +85,9 @@ class RulebookTips {
     final Map<String, dynamic>? crit =
         posture?[criterion] as Map<String, dynamic>?;
     final List<dynamic>? bucket = crit?[severity] as List<dynamic>?;
-    if (bucket != null && bucket.isNotEmpty)
+    if (bucket != null && bucket.isNotEmpty) {
       return bucket[idx % bucket.length].toString();
+    }
     return null;
   }
 
@@ -94,8 +95,9 @@ class RulebookTips {
     final Map<String, dynamic> entry = _strokeEntry(stroke);
     final Map<String, dynamic>? axisMap = entry[axis] as Map<String, dynamic>?;
     final List<dynamic>? bucket = axisMap?['$star'] as List<dynamic>?;
-    if (bucket != null && bucket.isNotEmpty)
+    if (bucket != null && bucket.isNotEmpty) {
       return bucket[idx % bucket.length].toString();
+    }
     return null;
   }
 
@@ -147,11 +149,13 @@ class RulebookTips {
       final String axis = axisKey[0];
       if (!axesEval.contains(axis)) continue;
       final int? star = (payload[axisKey[1]] as num?)?.toInt();
-      if (star == null || star >= 3)
+      if (star == null || star >= 3) {
         continue; // corrections only for 1-2; 4-5 → positives
+      }
       final String? text = _axisText(stroke, axis, star, seed + star);
-      if (text != null)
+      if (text != null) {
         out.add(RulebookSentence(axis, axis, 'star$star', text));
+      }
     }
 
     if (out.isEmpty) {
@@ -189,8 +193,9 @@ class RulebookTips {
         final Map<String, dynamic>? c = byName[name];
         if (c == null || criterionSeverity(c) != 'pass') continue;
         final String? text = _postureText(stroke, name, 'pass', seed + pos);
-        if (text != null)
+        if (text != null) {
           out.add(RulebookSentence('posture', name, 'pass', text));
+        }
       }
     }
     for (final List<String> axisKey in <List<String>>[
@@ -202,8 +207,9 @@ class RulebookTips {
       final int? star = (payload[axisKey[1]] as num?)?.toInt();
       if (star == null || star < 4) continue;
       final String? text = _axisText(stroke, axis, star, seed + star);
-      if (text != null)
+      if (text != null) {
         out.add(RulebookSentence(axis, axis, 'star$star', text));
+      }
     }
     return out;
   }

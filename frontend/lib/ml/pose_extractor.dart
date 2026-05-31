@@ -155,7 +155,7 @@ void _moveNetWorkerEntry(_WorkerInit init) async {
           }
         }
         // 3. MoveNet inference
-        final input = buf.buffer.asUint8List().reshape(<int>[
+        final input = buf.buffer.asUint8List().reshape<int>(<int>[
           1,
           _kInputSize,
           _kInputSize,
