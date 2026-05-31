@@ -1,24 +1,27 @@
-# ml_ondevice — ShattleCoach on-device ML (Dart)
+# frontend/lib/ml — ShattleCoach on-device ML (Dart)
 
 폰 안에서만 도는 배드민턴 스윙 분석 라이브러리. **서버 없이** 한 번의 호출로
-포즈 추출 → 폼 채점 → 임팩트 주석 → 코칭까지 끝냅니다. (Flutter / Android)
+포즈 추출 → 폼 채점 → 임팩트 주석 → 코칭까지 끝냅니다. (Flutter / Android · iOS)
 
 코칭 문장 자체는 룰북에서 결정론적으로 나오고, **선택적으로** Groq LLM이 그 문장들을
 자연스러운 한 단락으로 *다듬기만* 합니다(새 내용·숫자·조언 추가 금지). LLM 키는 빌드 시
-주입되며(`build_apk.ps1` + `.env`), 키가 없거나 오프라인이면 룰북 원문으로 자동 fallback —
+(`--dart-define=GROQ_API_KEY=...`)로 주입하거나 `frontend/.env`의 `GROQ_API_KEY`로
+런타임에 들어옵니다. 키가 없거나 오프라인이면 룰북 원문으로 자동 fallback —
 즉 **인터넷·키 없이도 코칭은 항상 동작**합니다.
 
-프론트 앱에 붙이는 **단계별 통합 방법**은 별도 가이드를 ML lead(Donghwi)에게 받으세요.
-이 문서는 **코드가 무엇인지** 설명합니다.
+이 문서는 라이브러리 코드가 **무엇인지** 설명합니다. 호출 지점은
+`features/ai_coach/ai_coach_screen.dart`를 참고하세요.
 
 ## 공개 API
 
 ```dart
-import 'ml/shattle_ml.dart';
+import 'package:shattlecoach/ml/shattle_ml.dart'; // 또는 상대경로
 
 final ShattleScore s = await ShattleMl.analyzeSwing(
   videoPath: path,        // 분석할 클립 경로
   stroke: 'high_clear',   // 사용자가 고른 동작 (kShattleStrokes 중 하나)
+  startMs: 1200,          // (선택) trim 시작 — 분석 범위 제한
+  endMs:   4800,          // (선택) trim 끝
   onStatus: (msg) {},     // (선택) 진행 상태 콜백
 );
 // s.postureStars / s.speedStars / s.stepStars  (평가되는 축만 non-null)
@@ -54,17 +57,22 @@ final ShattleScore s = await ShattleMl.analyzeSwing(
   → ShattleScore
 ```
 
-## 에셋 (`assets/`)
+## 에셋 (`frontend/assets/`)
 
 `movenet_lightning_int8.tflite`(포즈, INT8 2.9MB), `bst_speed_percentiles.json`,
 `bst_step_percentiles.json`, `rule_calibration.json`(동작별 임계값),
 `stroke_axes.json`(동작별 평가 축), `rulebook_tips.json`(코칭 문장 뱅크).
-런타임에 `assets/<name>` 경로로 로드됩니다.
+런타임에 `assets/<name>` 경로로 로드됩니다 (pubspec에 개별 등록).
 
-## 네이티브 (`android/FrameExtractor.kt.txt`)
+## 네이티브 채널
 
-`MethodChannel('com.shattlecoach/frame_extractor')` — 영상에서 프레임을 ms 단위로 뽑는
-Kotlin. 통합 시 앱 `MainActivity`에 넣습니다(가이드 참고).
+`MethodChannel('com.shattlecoach/frame_extractor')` — 영상에서 프레임을 ms 단위로
+뽑는 두 메서드(`getFrame`, `getDurationMs`)를 expose:
+
+- **Android**: `frontend/android/app/src/main/kotlin/com/mca/shattlecoach/MainActivity.kt`
+  (`MediaMetadataRetriever`)
+- **iOS**: `frontend/ios/Runner/FrameExtractor.swift`
+  (`AVAssetImageGenerator`, 50ms tolerance)
 
 ## 코칭 문구의 출처 / 수정 방법
 
@@ -78,5 +86,6 @@ Kotlin. 통합 시 앱 `MainActivity`에 넣습니다(가이드 참고).
 - ST-GCN 동작 분류기는 실제 폰 영상을 전부 OOD 처리해 **우회**(사용자가 동작 선택). 관련 ONNX/OOD 에셋 없음.
 - 자세 채점은 신경망이 아니라 순수 기하 + 임계값. 포즈 추출(MoveNet)만 INT8 양자화됨.
 - LLM(Groq `llama-3.1-8b-instant`)은 **문장 다듬기 전용**. 룰북이 고른 문장만 잇고, 가드레일
-  (금칙어 검사)로 새 조언을 막음. 키는 `--dart-define=GROQ_API_KEY`로 빌드 시 주입(`.env` →
-  `build_apk.ps1`), 소스/repo엔 안 들어감. `analyzeSwing(enableLlm: false)`로 끌 수 있음.
+  (금칙어 검사)로 새 조언을 막음. 키는 빌드 시 `--dart-define=GROQ_API_KEY=...`로 주입하거나
+  `frontend/.env`의 `GROQ_API_KEY`로 런타임에 들어옴(둘 다 gitignored / repo 미포함).
+  `analyzeSwing(enableLlm: false)`로 끌 수 있음.
