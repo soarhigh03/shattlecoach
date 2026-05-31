@@ -49,8 +49,11 @@ class AiCoachAnalysis {
   /// Mean of the non-null star scores. Used by the compact report card.
   /// Null when no axis was scored.
   double? get averageStars {
-    final List<int> scored =
-        <int?>[postureStars, speedStars, stepStars].whereType<int>().toList();
+    final List<int> scored = <int?>[
+      postureStars,
+      speedStars,
+      stepStars,
+    ].whereType<int>().toList();
     if (scored.isEmpty) return null;
     return scored.fold<int>(0, (int a, int b) => a + b) / scored.length;
   }

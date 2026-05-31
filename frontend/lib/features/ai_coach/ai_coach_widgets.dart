@@ -98,11 +98,7 @@ class PositiveLine extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.check_circle,
-            size: 18,
-            color: theme.colorScheme.primary,
-          ),
+          Icon(Icons.check_circle, size: 18, color: theme.colorScheme.primary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

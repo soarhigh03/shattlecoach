@@ -469,8 +469,8 @@ class _ResultSection extends StatelessWidget {
 class _ResultImageBox extends StatelessWidget {
   const _ResultImageBox({required this.image}) : _placeholder = null;
   const _ResultImageBox.placeholder({required Widget child})
-      : image = null,
-        _placeholder = child;
+    : image = null,
+      _placeholder = child;
 
   final Uint8List? image;
   final Widget? _placeholder;
@@ -496,11 +496,7 @@ class _ResultImageBox extends StatelessWidget {
   Widget _body(ThemeData theme) {
     if (_placeholder != null) return _placeholder;
     if (image != null) {
-      return Image.memory(
-        image!,
-        fit: BoxFit.contain,
-        gaplessPlayback: true,
-      );
+      return Image.memory(image!, fit: BoxFit.contain, gaplessPlayback: true);
     }
     return Center(
       child: Text(

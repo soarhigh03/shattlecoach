@@ -69,7 +69,10 @@ int _impactFrame(List<List<List<double>>> kpts, int wristIdx) {
   double best = -1;
   int bestI = lo;
   for (int i = lo; i < hi; i++) {
-    if (sm[i] > best) { best = sm[i]; bestI = i; }
+    if (sm[i] > best) {
+      best = sm[i];
+      bestI = i;
+    }
   }
   return bestI;
 }
@@ -77,7 +80,10 @@ int _impactFrame(List<List<List<double>>> kpts, int wristIdx) {
 int _dominantWristIdx(List<List<List<double>>> kpts) {
   double lc = 0, rc = 0;
   final int li = _idx['left_wrist']!, ri = _idx['right_wrist']!;
-  for (final List<List<double>> f in kpts) { lc += f[li][2]; rc += f[ri][2]; }
+  for (final List<List<double>> f in kpts) {
+    lc += f[li][2];
+    rc += f[ri][2];
+  }
   return rc >= lc ? ri : li;
 }
 
@@ -87,7 +93,11 @@ int _dominantWristIdx(List<List<List<double>>> kpts) {
 // criterion has no single correct direction we draw only the circle (no arrow)
 // with a short, stroke-correct cue — never a misleading one.
 List<_Correction> _corrections(
-    List<Map<String, dynamic>> failed, List<List<double>> kptsAtImpact, int wristIdx, String stroke) {
+  List<Map<String, dynamic>> failed,
+  List<List<double>> kptsAtImpact,
+  int wristIdx,
+  String stroke,
+) {
   final List<_Correction> out = <_Correction>[];
   final bool right = wristIdx == _idx['right_wrist'];
   for (final Map<String, dynamic> c in failed) {
@@ -99,7 +109,8 @@ List<_Correction> _corrections(
           out.add(_Correction(kCocoNames[wristIdx], 0, -110, '타점 더 높이 ↑'));
         } else if (stroke == 'forehand_drive') {
           out.add(_Correction(kCocoNames[wristIdx], 0, 0, '몸 앞 어깨높이'));
-        } else { // short_serve / unknown — never tell them to raise (illegal)
+        } else {
+          // short_serve / unknown — never tell them to raise (illegal)
           out.add(_Correction(kCocoNames[wristIdx], 0, 0, '타점 낮게 유지'));
         }
         break;
@@ -109,7 +120,14 @@ List<_Correction> _corrections(
           final double vx = kptsAtImpact[wristIdx][0] - kptsAtImpact[elbow][0];
           final double vy = kptsAtImpact[wristIdx][1] - kptsAtImpact[elbow][1];
           final double n = math.sqrt(vx * vx + vy * vy) + 1e-6;
-          out.add(_Correction(kCocoNames[elbow], vx / n * 100, vy / n * 100, '팔꿈치 펴기'));
+          out.add(
+            _Correction(
+              kCocoNames[elbow],
+              vx / n * 100,
+              vy / n * 100,
+              '팔꿈치 펴기',
+            ),
+          );
         } else if (stroke == 'forehand_drive') {
           out.add(_Correction(kCocoNames[elbow], 0, 0, '전완 회내'));
         } else {
@@ -124,7 +142,14 @@ List<_Correction> _corrections(
         }
         break;
       case 'knees_bent_at_prep':
-        out.add(_Correction('right_knee', 0, 85, stroke == 'short_serve' ? '무릎 살짝 ↓' : '무릎 굽히기 ↓'));
+        out.add(
+          _Correction(
+            'right_knee',
+            0,
+            85,
+            stroke == 'short_serve' ? '무릎 살짝 ↓' : '무릎 굽히기 ↓',
+          ),
+        );
         out.add(_Correction('left_knee', 0, 85, ''));
         break;
     }
@@ -134,7 +159,8 @@ List<_Correction> _corrections(
 
 double _playerScale(List<List<double>> kpts, double imgH) {
   final List<double> ys = <double>[
-    for (final List<double> j in kpts) if (j[2] > 0.2) j[1]
+    for (final List<double> j in kpts)
+      if (j[2] > 0.2) j[1],
   ];
   final double bboxH = ys.length >= 2
       ? (ys.reduce(math.max) - ys.reduce(math.min))
@@ -154,21 +180,36 @@ Future<AnnotationResult> annotateImpactOffline({
   int startMs = 0,
 }) async {
   if (detectionRate < 0.5) {
-    return AnnotationResult(null, -1,
-        'pose detection ${(detectionRate * 100).toStringAsFixed(0)}% — frame too noisy to annotate');
+    return AnnotationResult(
+      null,
+      -1,
+      'pose detection ${(detectionRate * 100).toStringAsFixed(0)}% — frame too noisy to annotate',
+    );
   }
   if (kpts.length < 2) {
     return AnnotationResult(null, -1, 'too few frames to locate impact');
   }
   final List<Map<String, dynamic>> failed = postureCriteria
-      .where((Map<String, dynamic> c) => c['pass'] == false && c['measurement'] != null)
+      .where(
+        (Map<String, dynamic> c) =>
+            c['pass'] == false && c['measurement'] != null,
+      )
       .toList();
   final int wristIdx = _dominantWristIdx(kpts);
   final int frameIdx = _impactFrame(kpts, wristIdx);
 
-  final Uint8List? jpeg = await fetchFrameJpegAtIndex(videoPath, frameIdx, fps: fps, startMs: startMs);
+  final Uint8List? jpeg = await fetchFrameJpegAtIndex(
+    videoPath,
+    frameIdx,
+    fps: fps,
+    startMs: startMs,
+  );
   if (jpeg == null || jpeg.length < 100) {
-    return AnnotationResult(null, frameIdx, 'could not re-read impact frame $frameIdx');
+    return AnnotationResult(
+      null,
+      frameIdx,
+      'could not re-read impact frame $frameIdx',
+    );
   }
 
   ui.Image image;
@@ -179,12 +220,24 @@ Future<AnnotationResult> annotateImpactOffline({
     return AnnotationResult(null, frameIdx, 'frame decode failed: $e');
   }
 
-  final List<_Correction> corrections = _corrections(failed, kpts[frameIdx], wristIdx, strokeLabel);
+  final List<_Correction> corrections = _corrections(
+    failed,
+    kpts[frameIdx],
+    wristIdx,
+    strokeLabel,
+  );
   const Map<String, String> ko = <String, String>{
-    'high_clear': '하이클리어', 'short_serve': '숏서브', 'forehand_drive': '포핸드 드라이브',
+    'high_clear': '하이클리어',
+    'short_serve': '숏서브',
+    'forehand_drive': '포핸드 드라이브',
   };
   try {
-    final Uint8List png = await _draw(image, kpts[frameIdx], corrections, ko[strokeLabel] ?? '');
+    final Uint8List png = await _draw(
+      image,
+      kpts[frameIdx],
+      corrections,
+      ko[strokeLabel] ?? '',
+    );
     return AnnotationResult(base64Encode(png), frameIdx, null);
   } catch (e) {
     image.dispose();
@@ -192,8 +245,12 @@ Future<AnnotationResult> annotateImpactOffline({
   }
 }
 
-Future<Uint8List> _draw(ui.Image image, List<List<double>> kpts,
-    List<_Correction> corrections, String strokeLabel) async {
+Future<Uint8List> _draw(
+  ui.Image image,
+  List<List<double>> kpts,
+  List<_Correction> corrections,
+  String strokeLabel,
+) async {
   final double w = image.width.toDouble(), h = image.height.toDouble();
   final ui.PictureRecorder rec = ui.PictureRecorder();
   final Canvas canvas = Canvas(rec, Rect.fromLTWH(0, 0, w, h));
@@ -227,8 +284,14 @@ Future<Uint8List> _draw(ui.Image image, List<List<double>> kpts,
       final double ang = math.atan2(dy, dx);
       final double ah = math.max(10, 22 * s);
       for (final double off in <double>[-0.4, 0.4]) {
-        canvas.drawLine(e,
-            Offset(e.dx - ah * math.cos(ang + off), e.dy - ah * math.sin(ang + off)), arrow);
+        canvas.drawLine(
+          e,
+          Offset(
+            e.dx - ah * math.cos(ang + off),
+            e.dy - ah * math.sin(ang + off),
+          ),
+          arrow,
+        );
       }
     }
     if (c.label.isNotEmpty) {
@@ -237,9 +300,19 @@ Future<Uint8List> _draw(ui.Image image, List<List<double>> kpts,
   }
 
   // title bar
-  canvas.drawRect(Rect.fromLTWH(0, 0, w, 50), Paint()..color = const Color(0xFFB41E1E));
-  _text(canvas, strokeLabel.isEmpty ? '임팩트 자세 — 빨간 부분 수정' : '임팩트 자세 — 빨간 부분 수정  ($strokeLabel)',
-      const Offset(16, 9), const Color(0xFFFFFFFF), 22);
+  canvas.drawRect(
+    Rect.fromLTWH(0, 0, w, 50),
+    Paint()..color = const Color(0xFFB41E1E),
+  );
+  _text(
+    canvas,
+    strokeLabel.isEmpty
+        ? '임팩트 자세 — 빨간 부분 수정'
+        : '임팩트 자세 — 빨간 부분 수정  ($strokeLabel)',
+    const Offset(16, 9),
+    const Color(0xFFFFFFFF),
+    22,
+  );
 
   final ui.Picture pic = rec.endRecording();
   final ui.Image out = await pic.toImage(image.width, image.height);
@@ -250,11 +323,16 @@ Future<Uint8List> _draw(ui.Image image, List<List<double>> kpts,
   return bd.buffer.asUint8List();
 }
 
-
-
 TextPainter _tp(String text, Color color, double size) {
   final TextPainter tp = TextPainter(
-    text: TextSpan(text: text, style: TextStyle(color: color, fontSize: size, fontWeight: FontWeight.w700)),
+    text: TextSpan(
+      text: text,
+      style: TextStyle(
+        color: color,
+        fontSize: size,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
     textDirection: TextDirection.ltr,
   );
   tp.layout();
@@ -266,13 +344,26 @@ void _text(Canvas canvas, String text, Offset at, Color color, double size) {
 }
 
 // D5: label with solid dark background box for contrast on busy court backgrounds.
-void _label(Canvas canvas, String text, double cx, double cy, double w, double h, double size) {
+void _label(
+  Canvas canvas,
+  String text,
+  double cx,
+  double cy,
+  double w,
+  double h,
+  double size,
+) {
   final TextPainter tp = _tp(text, const Color(0xFFFF5A50), size);
-  final double tx = (cx - tp.width / 2).clamp(8.0, math.max(8.0, w - tp.width - 8));
+  final double tx = (cx - tp.width / 2).clamp(
+    8.0,
+    math.max(8.0, w - tp.width - 8),
+  );
   final double ty = math.min(h - tp.height - 12, cy);
   canvas.drawRRect(
     RRect.fromRectAndRadius(
-      Rect.fromLTWH(tx - 6, ty - 4, tp.width + 12, tp.height + 8), const Radius.circular(4)),
+      Rect.fromLTWH(tx - 6, ty - 4, tp.width + 12, tp.height + 8),
+      const Radius.circular(4),
+    ),
     Paint()..color = const Color(0xE6141414),
   );
   tp.paint(canvas, Offset(tx, ty));

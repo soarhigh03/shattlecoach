@@ -21,8 +21,10 @@ const String kGroqModel = 'llama-3.1-8b-instant';
 
 /// Build-time injected key. Empty unless `--dart-define=GROQ_API_KEY=...` was
 /// passed at build time. const so it's tree-shaken into the binary.
-const String _kBuildTimeGroqApiKey =
-    String.fromEnvironment('GROQ_API_KEY', defaultValue: '');
+const String _kBuildTimeGroqApiKey = String.fromEnvironment(
+  'GROQ_API_KEY',
+  defaultValue: '',
+);
 
 /// Resolve the Groq key from either the build-time const (preferred, tree-
 /// shaken) or — for local dev — `GROQ_API_KEY` in the bundled `.env`. Returns
@@ -62,12 +64,12 @@ class LlmResult {
       LlmResult(skipped: true, reason: reason);
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        if (paragraph != null) 'paragraph': paragraph,
-        'skipped': skipped,
-        if (reason != null) 'reason': reason,
-        if (latencyMs != null) 'latency_ms': latencyMs,
-        'model': model,
-      };
+    if (paragraph != null) 'paragraph': paragraph,
+    'skipped': skipped,
+    if (reason != null) 'reason': reason,
+    if (latencyMs != null) 'latency_ms': latencyMs,
+    'model': model,
+  };
 }
 
 class GroqCoach {
@@ -89,8 +91,10 @@ class GroqCoach {
     if (key.isEmpty) {
       return LlmResult.skip('GROQ_API_KEY not set (build-time or .env)');
     }
-    final List<String> bullets =
-        sentenceTexts.map((String s) => s.trim()).where((String s) => s.isNotEmpty).toList();
+    final List<String> bullets = sentenceTexts
+        .map((String s) => s.trim())
+        .where((String s) => s.isNotEmpty)
+        .toList();
     if (bullets.isEmpty) {
       return LlmResult.skip('no rulebook sentences to stitch');
     }
@@ -99,8 +103,9 @@ class GroqCoach {
     final String forbidBlock = forbidden.isEmpty
         ? ''
         : '절대 사용하면 안 되는 표현(이 단어가 들어가면 잘못된 조언이 됨): '
-            '${forbidden.join(", ")}\n';
-    final String prompt = '''너는 한국어 배드민턴 코치의 말을 다듬는 편집자다.
+              '${forbidden.join(", ")}\n';
+    final String prompt =
+        '''너는 한국어 배드민턴 코치의 말을 다듬는 편집자다.
 아래 '코칭 문장'들은 규칙 기반 분석이 이미 선택한 조언이다.
 규칙:
 1. 문장들의 의미를 절대 바꾸지 마라.
@@ -140,18 +145,17 @@ $bulletLines
       }
       final Map<String, dynamic> rbody =
           jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
-      final String paragraph = (((rbody['choices'] as List<dynamic>?)?.first
-                  as Map<String, dynamic>?)?['message'] as Map<String, dynamic>?)?['content']
+      final String paragraph =
+          (((rbody['choices'] as List<dynamic>?)?.first
+                      as Map<String, dynamic>?)?['message']
+                  as Map<String, dynamic>?)?['content']
               ?.toString()
               .trim() ??
           '';
       if (paragraph.isEmpty) {
         return LlmResult.skip('Groq returned empty content');
       }
-      return LlmResult(
-        paragraph: paragraph,
-        latencyMs: sw.elapsedMilliseconds,
-      );
+      return LlmResult(paragraph: paragraph, latencyMs: sw.elapsedMilliseconds);
     } on TimeoutException {
       return LlmResult.skip('Groq timeout (${timeout.inSeconds}s)');
     } catch (e) {

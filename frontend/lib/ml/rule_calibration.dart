@@ -32,8 +32,10 @@ class RuleCalibration {
     double mdistRatio = 0.0,
     void Function(String source)? outSource,
   }) {
-    final Map<String, dynamic> perClass = (_cfg['per_class'] as Map<String, dynamic>?) ?? <String, dynamic>{};
-    final Map<String, dynamic> global = (_cfg['global'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+    final Map<String, dynamic> perClass =
+        (_cfg['per_class'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+    final Map<String, dynamic> global =
+        (_cfg['global'] as Map<String, dynamic>?) ?? <String, dynamic>{};
     final bool extreme = isOod && mdistRatio > 1e6;
     Map<String, dynamic> thrs;
     String source;
@@ -60,10 +62,17 @@ class RuleCalibration {
       final double margin = dir == '>=' ? (m - thrV) : (thrV - m);
       final double scale = math.max(thrV.abs() * 0.2, 1e-3);
       final double prob = 1.0 / (1.0 + math.exp(-margin / scale));
-      out.add(CriterionResult(
-        name: c.name, pass: passed, measurement: m, unit: c.unit,
-        threshold: thrV, probability: prob, reasonNa: c.reasonNa,
-      ));
+      out.add(
+        CriterionResult(
+          name: c.name,
+          pass: passed,
+          measurement: m,
+          unit: c.unit,
+          threshold: thrV,
+          probability: prob,
+          reasonNa: c.reasonNa,
+        ),
+      );
     }
     return out;
   }

@@ -565,7 +565,9 @@ class _CardMeta extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             Text(
-              averageStars == null ? '— / 5' : '${averageStars!.toStringAsFixed(1)} / 5',
+              averageStars == null
+                  ? '— / 5'
+                  : '${averageStars!.toStringAsFixed(1)} / 5',
               style: theme.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: theme.colorScheme.onSurface,

@@ -18,14 +18,29 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 // Memory cost: ~50MB per Interpreter × 3 = ~150MB extra. Galaxy S21 (8GB) OK.
 
 const List<String> kCocoNames = <String>[
-  'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
-  'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
-  'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
-  'left_knee', 'right_knee', 'left_ankle', 'right_ankle',
+  'nose',
+  'left_eye',
+  'right_eye',
+  'left_ear',
+  'right_ear',
+  'left_shoulder',
+  'right_shoulder',
+  'left_elbow',
+  'right_elbow',
+  'left_wrist',
+  'right_wrist',
+  'left_hip',
+  'right_hip',
+  'left_knee',
+  'right_knee',
+  'left_ankle',
+  'right_ankle',
 ];
 
-const int _kInputSize = 192;  // MoveNet Lightning input is 192x192
-const MethodChannel _frameCh = MethodChannel('com.shattlecoach/frame_extractor');
+const int _kInputSize = 192; // MoveNet Lightning input is 192x192
+const MethodChannel _frameCh = MethodChannel(
+  'com.shattlecoach/frame_extractor',
+);
 
 class PoseFrame {
   final int frameIndex;
@@ -33,12 +48,16 @@ class PoseFrame {
   final int height;
   final List<List<double>> keypoints;
   PoseFrame({
-    required this.frameIndex, required this.width, required this.height,
+    required this.frameIndex,
+    required this.width,
+    required this.height,
     required this.keypoints,
   });
   factory PoseFrame.empty(int idx, int w, int h) {
     return PoseFrame(
-      frameIndex: idx, width: w, height: h,
+      frameIndex: idx,
+      width: w,
+      height: h,
       keypoints: List<List<double>>.generate(17, (_) => <double>[0, 0, 0]),
     );
   }
@@ -51,8 +70,11 @@ class ExtractionResult {
   final double detectionRate;
   final double extractSeconds;
   ExtractionResult({
-    required this.frames, required this.width, required this.height,
-    required this.detectionRate, required this.extractSeconds,
+    required this.frames,
+    required this.width,
+    required this.height,
+    required this.detectionRate,
+    required this.extractSeconds,
   });
 }
 
@@ -74,7 +96,13 @@ class _WorkerResult {
   final int origH;
   final List<List<double>> keypoints;
   final String? error;
-  _WorkerResult(this.frameIndex, this.origW, this.origH, this.keypoints, this.error);
+  _WorkerResult(
+    this.frameIndex,
+    this.origW,
+    this.origH,
+    this.keypoints,
+    this.error,
+  );
 }
 
 void _moveNetWorkerEntry(_WorkerInit init) async {
@@ -90,19 +118,32 @@ void _moveNetWorkerEntry(_WorkerInit init) async {
     if (msg is _WorkerJob) {
       try {
         if (interp == null) {
-          msg.replyTo.send(_WorkerResult(msg.frameIndex, 0, 0, _emptyKp(), 'interpreter null'));
+          msg.replyTo.send(
+            _WorkerResult(msg.frameIndex, 0, 0, _emptyKp(), 'interpreter null'),
+          );
           continue;
         }
         // 1. Decode JPEG
         final img.Image? decoded = img.decodeJpg(msg.jpegBytes);
         if (decoded == null) {
-          msg.replyTo.send(_WorkerResult(msg.frameIndex, 0, 0, _emptyKp(),
-              'JPEG decode failed (size=${msg.jpegBytes.length})'));
+          msg.replyTo.send(
+            _WorkerResult(
+              msg.frameIndex,
+              0,
+              0,
+              _emptyKp(),
+              'JPEG decode failed (size=${msg.jpegBytes.length})',
+            ),
+          );
           continue;
         }
         final int origW = decoded.width, origH = decoded.height;
         // 2. Resize to 192x192
-        final img.Image resized = img.copyResize(decoded, width: _kInputSize, height: _kInputSize);
+        final img.Image resized = img.copyResize(
+          decoded,
+          width: _kInputSize,
+          height: _kInputSize,
+        );
         final Uint8List buf = Uint8List(_kInputSize * _kInputSize * 3);
         int wi = 0;
         for (int y = 0; y < _kInputSize; y++) {
@@ -114,13 +155,27 @@ void _moveNetWorkerEntry(_WorkerInit init) async {
           }
         }
         // 3. MoveNet inference
-        final input = buf.buffer.asUint8List().reshape(<int>[1, _kInputSize, _kInputSize, 3]);
+        final input = buf.buffer.asUint8List().reshape(<int>[
+          1,
+          _kInputSize,
+          _kInputSize,
+          3,
+        ]);
         final output = List<List<List<List<double>>>>.generate(
-          1, (_) => List<List<List<double>>>.generate(
-            1, (_) => List<List<double>>.generate(
-              17, (_) => List<double>.filled(3, 0))));
+          1,
+          (_) => List<List<List<double>>>.generate(
+            1,
+            (_) => List<List<double>>.generate(
+              17,
+              (_) => List<double>.filled(3, 0),
+            ),
+          ),
+        );
         interp.run(input, output);
-        final List<List<double>> kp = List<List<double>>.generate(17, (_) => <double>[0, 0, 0]);
+        final List<List<double>> kp = List<List<double>>.generate(
+          17,
+          (_) => <double>[0, 0, 0],
+        );
         for (int j = 0; j < 17; j++) {
           final double yNorm = output[0][0][j][0];
           final double xNorm = output[0][0][j][1];
@@ -129,10 +184,14 @@ void _moveNetWorkerEntry(_WorkerInit init) async {
         }
         msg.replyTo.send(_WorkerResult(msg.frameIndex, origW, origH, kp, null));
       } catch (e) {
-        msg.replyTo.send(_WorkerResult(msg.frameIndex, 0, 0, _emptyKp(), e.toString()));
+        msg.replyTo.send(
+          _WorkerResult(msg.frameIndex, 0, 0, _emptyKp(), e.toString()),
+        );
       }
     } else if (msg == 'close') {
-      try { interp?.close(); } catch (_) {}
+      try {
+        interp?.close();
+      } catch (_) {}
       recv.close();
       break;
     }
@@ -155,14 +214,17 @@ class _WorkerPool {
   _WorkerPool._(this._ports, this._isolates);
 
   static Future<_WorkerPool> spawn(int n) async {
-    final ByteData modelData = await rootBundle.load('assets/movenet_lightning_int8.tflite');
+    final ByteData modelData = await rootBundle.load(
+      'assets/movenet_lightning_int8.tflite',
+    );
     final Uint8List modelBytes = modelData.buffer.asUint8List();
     final List<SendPort> ports = <SendPort>[];
     final List<Isolate> isolates = <Isolate>[];
     for (int i = 0; i < n; i++) {
       final ReceivePort handshake = ReceivePort();
       final Isolate iso = await Isolate.spawn<_WorkerInit>(
-        _moveNetWorkerEntry, _WorkerInit(modelBytes, handshake.sendPort),
+        _moveNetWorkerEntry,
+        _WorkerInit(modelBytes, handshake.sendPort),
       );
       final SendPort wp = await handshake.first as SendPort;
       ports.add(wp);
@@ -183,10 +245,14 @@ class _WorkerPool {
 
   void close() {
     for (final SendPort p in _ports) {
-      try { p.send('close'); } catch (_) {}
+      try {
+        p.send('close');
+      } catch (_) {}
     }
     for (final Isolate i in _isolates) {
-      try { i.kill(priority: Isolate.beforeNextEvent); } catch (_) {}
+      try {
+        i.kill(priority: Isolate.beforeNextEvent);
+      } catch (_) {}
     }
   }
 }
@@ -199,7 +265,10 @@ Future<_WorkerPool> _getPool() async {
 
 Future<int> _videoDurationMs(String path) async {
   try {
-    final dynamic d = await _frameCh.invokeMethod<dynamic>('getDurationMs', <String, dynamic>{'path': path});
+    final dynamic d = await _frameCh.invokeMethod<dynamic>(
+      'getDurationMs',
+      <String, dynamic>{'path': path},
+    );
     return (d as num?)?.toInt() ?? 0;
   } catch (e) {
     throw Exception('native getDurationMs failed: $e');
@@ -214,27 +283,40 @@ Future<int> _videoDurationMs(String path) async {
 /// [startMs] must match the value passed to [extractPose] so the index→time
 /// mapping lines up — otherwise the annotator would redraw the wrong frame
 /// when the caller analysed a trimmed range.
-Future<Uint8List?> fetchFrameJpegAtIndex(String path, int frameIndex,
-    {double fps = 15.0, int quality = 90, int startMs = 0}) async {
+Future<Uint8List?> fetchFrameJpegAtIndex(
+  String path,
+  int frameIndex, {
+  double fps = 15.0,
+  int quality = 90,
+  int startMs = 0,
+}) async {
   final int frameStepMs = (1000.0 / fps).round();
   try {
-    return await _getFrameJpeg(path, startMs + frameIndex * frameStepMs, quality: quality);
+    return await _getFrameJpeg(
+      path,
+      startMs + frameIndex * frameStepMs,
+      quality: quality,
+    );
   } catch (_) {
     return null;
   }
 }
 
-Future<Uint8List?> _getFrameJpeg(String path, int timeMs, {int quality = 85}) async {
+Future<Uint8List?> _getFrameJpeg(
+  String path,
+  int timeMs, {
+  int quality = 85,
+}) async {
   try {
-    final Uint8List? bytes = await _frameCh.invokeMethod<Uint8List>('getFrame', <String, dynamic>{
-      'path': path, 'timeMs': timeMs, 'jpegQuality': quality,
-    });
+    final Uint8List? bytes = await _frameCh.invokeMethod<Uint8List>(
+      'getFrame',
+      <String, dynamic>{'path': path, 'timeMs': timeMs, 'jpegQuality': quality},
+    );
     return bytes;
   } on PlatformException catch (e) {
     throw Exception('native getFrame@${timeMs}ms: ${e.code} ${e.message}');
   }
 }
-
 
 /// Extracts pose from [videoPath] using a 3-isolate MoveNet worker pool.
 /// Pipeline: native frame fetch → isolate preproc → worker pool MoveNet.
@@ -280,9 +362,12 @@ Future<ExtractionResult> extractPose(
   }
 
   final List<PoseFrame> frames = List<PoseFrame>.filled(
-    nFrames, PoseFrame.empty(0, 0, 0), growable: false,
+    nFrames,
+    PoseFrame.empty(0, 0, 0),
+    growable: false,
   );
-  int w = 0, h = 0; int detected = 0;
+  int w = 0, h = 0;
+  int detected = 0;
   int doneCount = 0;
 
   Future<void> processFrame(int i) async {
@@ -302,11 +387,19 @@ Future<ExtractionResult> extractPose(
     if (res.error != null && i == 0) {
       throw Exception('[step:movenet_worker_frame0] ${res.error}');
     }
-    if (w == 0 || h == 0) { w = res.origW; h = res.origH; }
+    if (w == 0 || h == 0) {
+      w = res.origW;
+      h = res.origH;
+    }
     final List<List<double>> kp = res.keypoints;
     final bool anyConf = kp.any((List<double> j) => j[2] > 0.1);
     if (anyConf) detected++;
-    frames[i] = PoseFrame(frameIndex: i, width: res.origW, height: res.origH, keypoints: kp);
+    frames[i] = PoseFrame(
+      frameIndex: i,
+      width: res.origW,
+      height: res.origH,
+      keypoints: kp,
+    );
   }
 
   // Process frames in 4 parallel streams (matches kInFlight = pool size + 1).
@@ -331,7 +424,9 @@ Future<ExtractionResult> extractPose(
 
   sw.stop();
   return ExtractionResult(
-    frames: frames, width: w, height: h,
+    frames: frames,
+    width: w,
+    height: h,
     detectionRate: frames.isEmpty ? 0.0 : detected / frames.length,
     extractSeconds: sw.elapsedMilliseconds / 1000.0,
   );
