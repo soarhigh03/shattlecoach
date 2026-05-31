@@ -172,6 +172,18 @@ class RulebookTips {
         .join(' ');
   }
 
+  /// Forbidden tokens that appear in [smoothed] but NOT already in the
+  /// deterministic [fallback] — i.e. newly introduced by the LLM. If non-empty,
+  /// the smoothed paragraph must be discarded in favour of the fallback.
+  /// Case-insensitive substring match. Twin of rulebook.py introduced_forbidden.
+  static List<String> introducedForbidden(
+      String smoothed, String fallback, List<String> forbidden) {
+    final String sl = smoothed.toLowerCase();
+    final String fl = fallback.toLowerCase();
+    return forbidden
+        .where((String k) => sl.contains(k.toLowerCase()) && !fl.contains(k.toLowerCase()))
+        .toList();
+  }
 }
 
 /// Build the coaching block for [payload] — deterministic, no LLM. Each bank

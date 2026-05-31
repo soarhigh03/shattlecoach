@@ -7,6 +7,7 @@
 
 import 'axis_filter.dart';
 import 'impact_annotator.dart';
+import 'llm_client.dart';
 import 'pose_extractor.dart';
 import 'rule_calibration.dart';
 import 'rule_scorer.dart';
@@ -28,6 +29,7 @@ class ShattleScore {
   final int? stepStars; // present only if 'step' in axesEvaluated
   final List<String> positives; // "doing well" lines (✓)
   final String coachingParagraph; // the coaching text to show
+  final String coachingSource; // 'rulebook' (deterministic) | 'llm' (Groq-smoothed)
   final String? annotatedImpactPngBase64; // impact frame with markers (base64 PNG) or null
   final String? annotationSkipReason; // why the image is null, if so
   final double processingSeconds;
@@ -43,6 +45,7 @@ class ShattleScore {
     this.stepStars,
     required this.positives,
     required this.coachingParagraph,
+    this.coachingSource = 'rulebook',
     this.annotatedImpactPngBase64,
     this.annotationSkipReason,
     required this.processingSeconds,
@@ -75,6 +78,7 @@ class ShattleMl {
     required String videoPath,
     required String stroke,
     double fps = 15.0,
+    bool enableLlm = true,
     void Function(String status)? onStatus,
   }) async {
     assert(kShattleStrokes.contains(stroke), 'stroke must be one of $kShattleStrokes');
@@ -154,6 +158,44 @@ class ShattleMl {
       if (c.measurement != null) seed += (c.measurement! * 100).round();
     }
     final Map<String, dynamic> rb = composeCoaching(_bank!, payload, seed: seed.abs());
+
+    // LLM smoothing (optional): stitch the deterministic rulebook sentences into
+    // one natural paragraph. Guardrailed — the smoothed text is discarded if it
+    // introduces a forbidden keyword. Any failure (no build-time key / offline /
+    // timeout / bad response) silently keeps the deterministic rulebook fallback,
+    // so coaching always works even with no network.
+    if (enableLlm && GroqCoach.hasKey) {
+      onStatus?.call('코칭 다듬는 중…');
+      final List<String> sentenceTexts =
+          ((rb['sentences'] as List<dynamic>?) ?? const <dynamic>[])
+              .map((dynamic e) => (e as Map<String, dynamic>)['text']?.toString() ?? '')
+              .where((String t) => t.isNotEmpty)
+              .toList();
+      final String fallback = (rb['paragraph'] as String?) ?? '';
+      final List<String> forbidden = _bank!.forbiddenKeywords(stroke);
+      // Only ask the model to avoid forbidden tokens not already (correctly) used.
+      final List<String> promptForbidden = forbidden
+          .where((String k) => !fallback.toLowerCase().contains(k.toLowerCase()))
+          .toList();
+      final LlmResult llm = await GroqCoach.smooth(
+          sentenceTexts: sentenceTexts, forbidden: promptForbidden);
+      final String? smoothed = llm.paragraph;
+      if (smoothed != null) {
+        final List<String> introduced =
+            RulebookTips.introducedForbidden(smoothed, fallback, forbidden);
+        if (introduced.isEmpty) {
+          rb['paragraph'] = smoothed;
+          rb['source'] = 'llm';
+          rb['llm'] = llm.toJson();
+        } else {
+          rb['llm'] = LlmResult.skip(
+                  "smoothed output introduced forbidden keyword '${introduced.first}'; used fallback")
+              .toJson();
+        }
+      } else {
+        rb['llm'] = llm.toJson();
+      }
+    }
     payload['rulebook'] = rb;
 
     sw.stop();
@@ -173,6 +215,7 @@ class ShattleMl {
       stepStars: payload['step_stars'] as int?,
       positives: positives,
       coachingParagraph: (rb['paragraph'] as String?) ?? '',
+      coachingSource: (rb['source'] as String?) ?? 'rulebook',
       annotatedImpactPngBase64: payload['annotated_impact_png_base64'] as String?,
       annotationSkipReason: payload['annotation_skip_reason'] as String?,
       processingSeconds: payload['processing_seconds'] as double,

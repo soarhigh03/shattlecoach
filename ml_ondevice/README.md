@@ -1,7 +1,12 @@
 # ml_ondevice — ShattleCoach on-device ML (Dart)
 
-폰 안에서만 도는 배드민턴 스윙 분석 라이브러리. **서버·인터넷·API 키 없이** 한 번의 호출로
+폰 안에서만 도는 배드민턴 스윙 분석 라이브러리. **서버 없이** 한 번의 호출로
 포즈 추출 → 폼 채점 → 임팩트 주석 → 코칭까지 끝냅니다. (Flutter / Android)
+
+코칭 문장 자체는 룰북에서 결정론적으로 나오고, **선택적으로** Groq LLM이 그 문장들을
+자연스러운 한 단락으로 *다듬기만* 합니다(새 내용·숫자·조언 추가 금지). LLM 키는 빌드 시
+주입되며(`build_apk.ps1` + `.env`), 키가 없거나 오프라인이면 룰북 원문으로 자동 fallback —
+즉 **인터넷·키 없이도 코칭은 항상 동작**합니다.
 
 프론트 앱에 붙이는 **단계별 통합 방법**은 별도 가이드를 ML lead(Donghwi)에게 받으세요.
 이 문서는 **코드가 무엇인지** 설명합니다.
@@ -44,7 +49,8 @@ final ShattleScore s = await ShattleMl.analyzeSwing(
   → scoreSpeed / scoreStep                # 별점
   → AxisFilter.apply                      # 무관 축 키 제거
   → annotateImpactOffline                 # 임팩트 주석 PNG
-  → composeCoaching                       # 룰북 문장 → 한 단락 (LLM 없음)
+  → composeCoaching                       # 룰북 문장 선택 → 결정론적 한 단락
+  → (선택) GroqCoach.smooth               # LLM이 그 문장들을 자연스럽게 잇기만 함(가드레일)
   → ShattleScore
 ```
 
@@ -71,3 +77,6 @@ Kotlin. 통합 시 앱 `MainActivity`에 넣습니다(가이드 참고).
 - 자세는 **4기준**. 5번째였던 "머리 안정"(nose_y 표준편차)은 카메라 거리에 취약해 제거.
 - ST-GCN 동작 분류기는 실제 폰 영상을 전부 OOD 처리해 **우회**(사용자가 동작 선택). 관련 ONNX/OOD 에셋 없음.
 - 자세 채점은 신경망이 아니라 순수 기하 + 임계값. 포즈 추출(MoveNet)만 INT8 양자화됨.
+- LLM(Groq `llama-3.1-8b-instant`)은 **문장 다듬기 전용**. 룰북이 고른 문장만 잇고, 가드레일
+  (금칙어 검사)로 새 조언을 막음. 키는 `--dart-define=GROQ_API_KEY`로 빌드 시 주입(`.env` →
+  `build_apk.ps1`), 소스/repo엔 안 들어감. `analyzeSwing(enableLlm: false)`로 끌 수 있음.
