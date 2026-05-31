@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+*.log
+# pipeline run outputs (regenerated)
+experiments/*/output/
+experiments/demo_v4/output/

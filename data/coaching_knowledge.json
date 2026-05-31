@@ -1,0 +1,305 @@
+{
+  "_meta": {
+    "purpose": "Coaching tip-bank for the rule-based scorer (scripts/rule_based_scorer.py). Maps each of the 5 deterministic criteria (C1-C5) to good-form descriptions, biomechanical rationale, Korean+English correction sentences, threshold rationale with literature, and per-stroke LLM forbidden-word guardrails. Consumed by Session C as rulebook tip-bank content.",
+    "generated": "2026-05-30",
+    "author": "ShattleCoach ML track (Donghwi Moon) — research Session B",
+    "strokes": [
+      "high_clear",
+      "short_serve",
+      "forehand_drive"
+    ],
+    "criterion_keys": [
+      "peak_wrist_above_shoulder",
+      "elbow_extension_>=160deg",
+      "hip_rotation_>=20deg",
+      "knees_bent_at_prep"
+    ],
+    "criterion_key_to_id": {
+      "peak_wrist_above_shoulder": "C1",
+      "elbow_extension_>=160deg": "C2",
+      "hip_rotation_>=20deg": "C3",
+      "knees_bent_at_prep": "C4"
+    },
+    "applies_values": {
+      "yes": "Criterion is valid for this stroke; coach it directly.",
+      "caution": "Criterion was designed for overhead strokes and only partially transfers; soften the threshold and prefer the noted alternative cue.",
+      "no": "Criterion is invalid, irrelevant, or illegal for this stroke. The scorer should suppress it and the LLM must NOT coach toward it."
+    },
+    "key_insight": "The scorer applies the same 5 criteria to all strokes, but C1 (wrist above shoulder), C2 (elbow extension) and C3 (hip rotation) are overhead-power criteria. For the short serve they are illegal/counter-productive (BWF Law 9.1.6 caps contact below 1.15 m); for the forehand drive C1 is a flat-shot mismatch and C2 is over-strict. This mirrors the stroke_axes.json guardrail decision of 2026-05-24.",
+    "2d_pose_caveat": "All angle thresholds are evaluated on 2D monocular keypoints. Out-of-plane error is material (elbow MAE ~21.5-28.9 deg, knee MAE ~9.3-21.9 deg per JMIR Rehab 2020 / Sci Reports 2025). Treat angle rules as gross 'bent vs roughly extended' classifiers with a +/-25 deg tolerance band, and normalise distance features by shoulder-hip body scale to cancel camera distance.",
+    "_note_session_c": "2026-05-31: head_stable(C5) removed (noisy nose_y metric); fix_ko_minor added (softer minor-severity); 셔틀→셔틀콕; forehand C1 reworded. 4 criteria now."
+  },
+  "high_clear": {
+    "peak_wrist_above_shoulder": {
+      "criterion_id": "C1",
+      "applies": "yes",
+      "good": "타격 순간 라켓 손목이 어깨보다 높고, 셔틀콕을 머리 위~약간 앞(약 30~50cm 앞, 12~1시 방향)에서 타격한다. / At impact the racket wrist is above shoulder height and the shuttle is struck high and slightly in front of the body (~30-50 cm forward).",
+      "why": "높고 앞선 타점은 셔틀에 하강 각도와 깊이를 주고 어깨-팔꿈치-손목 운동사슬을 최대 속도 위치에 정렬한다. / A high, forward contact gives depth and aligns the kinetic chain at peak velocity.",
+      "fix_ko": "타점이 머리 뒤로 늦었어요. 더 일찍 이동해서 손목이 어깨보다 높고 몸 앞에서 칠 수 있게 자리를 잡으세요.",
+      "fix_en": "Your contact is late and behind your head. Move earlier so you strike with the wrist above shoulder height and slightly in front of your body.",
+      "threshold": "정량 cm 기준 없음(코칭 휴리스틱): '어깨 위 + 팔 길이, 몸 앞 ~30-50cm'. scorer C1 = (shoulder_y - wrist_y)/body_scale > 0.",
+      "forbidden_words": [],
+      "sources": [
+        "https://www.badmintonbible.com/shots/rearcourt/forehand/clears/hitting-a-full-length",
+        "https://badminton-insight.com/how-to-do-a-forehand-clear-in-badminton/",
+        "https://www.pecentral.org/lessonideas/cues/badmintonoverhandclear.html",
+        "https://stbadmintonacademy.my/master-the-badminton-overhead-clear-with-expert-tips-malaysia/"
+      ],
+      "fix_ko_minor": "타점이 살짝 늦었어요. 조금만 더 일찍 들어가서 어깨 위 몸 앞에서 맞혀 보세요."
+    },
+    "elbow_extension_>=160deg": {
+      "criterion_id": "C2",
+      "applies": "yes",
+      "good": "타격 순간 팔꿈치가 거의 완전히(약 160~175°) 펴지며 전완을 회내(pronation)하며 타격한다. / Near-full elbow extension (~160-175 deg) with forearm pronation at contact.",
+      "why": "팔꿈치 신전은 타점 높이와 라켓 헤드 회전 반경을 키워 근위->원위 운동사슬을 완성한다. / Extension maximises reach and racket-head radius, completing the proximal-to-distal chain.",
+      "fix_ko": "팔꿈치가 굽은 채로 치고 있어요. 셔틀콕을 향해 팔을 위로 쭉 뻗고 전완을 돌리며 '던지듯' 타격하세요.",
+      "fix_en": "Your elbow is bent at contact. Reach up fully toward the shuttle and pronate the forearm — think 'throw.'",
+      "threshold": "엘리트 접촉 시 팔꿈치 약 156-173° (Tanabe & Ito; 테니스 서브 154-164°). 단 더 빠른 스매시는 오히려 '덜 편' 팔꿈치와 상관(r=-0.678, Chin 2021) — 160°는 보수적·방어가능한 near-full 기준. 2D 추정 팔꿈치 오차 MAE 21.5-28.9° -> ±25° 여유. scorer C2 threshold = 160° (shoulder-elbow-wrist).",
+      "forbidden_words": [],
+      "sources": [
+        "https://www.tandfonline.com/doi/full/10.1080/14763141.2021.1877336",
+        "https://www.mdpi.com/2076-3417/13/22/12488",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC5260572/",
+        "https://badminton-insight.com/how-to-do-a-forehand-clear-in-badminton/"
+      ],
+      "fix_ko_minor": "팔꿈치를 조금만 더 펴서 임팩트하면 타구가 더 깊어져요."
+    },
+    "hip_rotation_>=20deg": {
+      "criterion_id": "C3",
+      "applies": "yes",
+      "good": "준비 시 라켓 어깨를 뒤로 돌려 측면(side-on)으로 세팅 후, 타격까지 골반->체간->어깨 순으로 회전한다. 숙련자 X-factor 약 47°. / Set side-on, then rotate hips->trunk->shoulder into contact; elite X-factor ~47 deg.",
+      "why": "체간 회전은 운동사슬의 근위 동력원으로 셔틀 속도의 50%+를 만든다. / Trunk rotation is the proximal engine, contributing >50% of shuttle speed.",
+      "fix_ko": "몸이 정면을 향한 채 팔로만 치고 있어요. 준비에서 라켓 어깨를 뒤로 돌려 옆으로 서고, 엉덩이부터 회전하며 팔이 따라오게 하세요. '큰 근육 먼저, 작은 근육 마지막.'",
+      "fix_en": "You're hitting arm-only with your body square. Turn side-on in prep, then rotate from the hips first and let the arm follow — big muscles start, small muscles finish.",
+      "threshold": "X-factor(골반-흉곽 분리): 숙련 46.9±11.2°, 초보 36.7±8.2° (Zhang 2016, PMC5260572); 어깨 내회전 ROM 숙련 107.5° vs 초보 47.7°. 20°는 '회전이 존재하는가'의 최소 바닥값. 주의: X-factor는 횡단면 3D각이라 단일 카메라 2D에서 과소측정 — 어깨선 vs 골반선 영상 기울기 차로 대용. scorer C3 threshold = 20°.",
+      "forbidden_words": [],
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC5260572/",
+        "https://opus.uleth.ca/bitstream/handle/10133/3758/Zhang_Zhao_MSC_2015.pdf",
+        "https://badminton-insight.com/how-to-do-a-forehand-clear-in-badminton/"
+      ],
+      "fix_ko_minor": "허리 회전을 조금 더 크게 쓰면 같은 힘으로 더 멀리 보낼 수 있어요."
+    },
+    "knees_bent_at_prep": {
+      "criterion_id": "C4",
+      "applies": "yes",
+      "good": "준비 자세에서 무릎을 부드럽게 구부려(쿼터스쿼트, 무릎각 약 130~155°) 무게중심을 낮추고 발앞꿈치에 체중을 싣는다. / Soft knee bend (quarter-squat, ~130-155 deg knee angle) in ready stance, weight on the balls of the feet.",
+      "why": "무릎 굴곡은 무게중심을 낮추고 다리 신전근을 로딩해 폭발적 이동/점프를 가능케 한다. / Flexion lowers the centre of mass and loads the leg extensors for explosive push-off.",
+      "fix_ko": "무릎을 펴고 꼿꼿이 서 있어요. 무릎을 살짝 구부려 낮은 자세로 준비하면 더 빠르게 움직일 수 있어요.",
+      "fix_en": "You're standing upright with straight knees. Bend the knees into a quarter-squat to move explosively.",
+      "threshold": "운동 준비자세 무릎 굴곡 약 20-40°(스포츠과학 통념); 배드민턴 스플릿스텝/런지 접지 시 약 28-32° 굴곡 (Wang 2024, PMC11117488); 오버헤드 take-off 무릎각 128-173° 분포 (PMC9598458). scorer C4: 무릎각 < 150° = 굽힘 pass. 측면 카메라 무릎각 2D MAE 약 9-22°.",
+      "forbidden_words": [],
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC11117488/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9598458/",
+        "https://www.badmintonbible.com/footwork/ready-position"
+      ],
+      "fix_ko_minor": "준비할 때 무릎을 조금만 더 굽혀 낮은 자세를 잡아 보세요."
+    }
+  },
+  "short_serve": {
+    "peak_wrist_above_shoulder": {
+      "criterion_id": "C1",
+      "applies": "no",
+      "good": "임팩트 시 손목과 셔틀콕은 허리 아래(허벅지 높이)에 있어야 한다. 어깨 위 타점은 규정 위반이다. / At contact the wrist and shuttle must be below the waist (~thigh height); a shoulder-high contact is illegal.",
+      "why": "BWF Law 9.1.6: 타격 순간 셔틀 전체가 코트면에서 1.15m 아래여야 한다(도메스틱은 허리 아래). 손목이 어깨 높이면 합법 숏서브가 기하학적으로 불가능하다. / Law 9.1.6 caps contact below 1.15 m (waist for domestic); a shoulder-high wrist makes a legal serve impossible.",
+      "fix_ko": "서브할 때 손목을 어깨 위로 올리지 마세요. 셔틀콕은 반드시 허리 아래(허벅지 높이)에서 임팩트해야 합니다.",
+      "fix_en": "Don't raise your wrist to shoulder height on a serve — contact must stay below the waist, around thigh height.",
+      "threshold": "셔틀 접촉 < 1.15m (BWF Law 9.1.6, 2018.03~); 도메스틱은 '허리(최하단 갈비뼈선) 아래'. 라켓 헤드는 손보다 아래·하향(Law 9.1.5). scorer C1은 서브에 적용 금지(역적용).",
+      "forbidden_words": [
+        "높이 들어 올려 / lift high",
+        "어깨 위로 / above shoulder",
+        "위로 올려 / reach up",
+        "높은 임팩트 / high contact point"
+      ],
+      "sources": [
+        "https://badminton-insight.com/badminton-serving-rules-with-pictures/",
+        "https://www.olympics.com/en/news/badminton-service-rules-sides-courts-singles-doubles-bwf",
+        "https://hkbadmintonassn.org.hk/wp-content/uploads/2023/06/Section-4.1-Laws-of-Badminton-29-May-2023-V2.0.pdf"
+      ],
+      "fix_ko_minor": "타점을 지금보다 조금 더 낮고 일정하게 가져가 보세요 (허리 아래)."
+    },
+    "elbow_extension_>=160deg": {
+      "criterion_id": "C2",
+      "applies": "no",
+      "good": "팔꿈치는 부드럽게 굽힌 채(약 90~120°) 유지하고 손가락·손목의 작은 밀기로 셔틀콕을 보낸다. / Keep the elbow comfortably bent (~90-120 deg); push with fingers/wrist, not full-arm extension.",
+      "why": "숏서브는 컨트롤된 푸시이지 파워 스트로크가 아니다. 팔 완전 신전은 속도·아크를 키워 궤적 제어와 기만을 망친다. / It's a controlled push, not a power stroke; full extension adds uncontrolled speed and kills deception.",
+      "fix_ko": "팔꿈치를 완전히 펴지 마세요. 살짝 구부린 채 손목·손가락으로 셔틀콕을 부드럽게 밀어 주세요.",
+      "fix_en": "Don't fully extend your elbow on a short serve. Keep it slightly bent and push the shuttle gently with wrist and fingers.",
+      "threshold": "서브용 공인 각도 없음; 코칭 합의 접촉 시 팔꿈치 약 90-120°(컴팩트 푸시), 160°+는 파워스트로크 신호. scorer C2 서브 적용 금지.",
+      "forbidden_words": [
+        "팔을 쭉 펴서 / fully extend the arm",
+        "완전히 펴 / lock out the elbow",
+        "풀 스윙 / full swing",
+        "힘차게 펴며 / powerfully extend"
+      ],
+      "sources": [
+        "https://alien-pros.shop/pages/blog-how-to-improve-a-short-serve-in-badminton",
+        "https://www.teachpe.com/sports-coaching/badminton/badminton-serve",
+        "https://badminton-insight.com/how-to-do-a-backhand-serve-in-badminton/"
+      ],
+      "fix_ko_minor": "팔을 조금 더 편하게 굽힌 채 손목·손가락으로 부드럽게 밀어 보세요."
+    },
+    "hip_rotation_>=20deg": {
+      "criterion_id": "C3",
+      "applies": "no",
+      "good": "몸통 회전을 최소화하고 상체를 안정적으로 유지하며, 손목·손가락의 작고 정확한 동작으로 셔틀콕을 제어한다. / Minimise trunk rotation, keep the torso stable, control with a compact wrist/finger action.",
+      "why": "큰 회전은 백스윙 아크를 키워 동작을 느리게 하고 의도를 노출해 기만을 깨뜨린다. 또한 양발 고정 규정(Law 9.1.1)과 충돌한다. / Large rotation telegraphs intent, slows the serve, and conflicts with the stationary-feet rule.",
+      "fix_ko": "몸을 크게 돌리지 마세요. 상체를 고정하고 손목·손가락만으로 셔틀콕을 밀어 주세요. 회전보다 정확성이 핵심입니다.",
+      "fix_en": "Don't rotate your trunk on a short serve. Keep the upper body still and push with wrist and fingers — precision over rotation.",
+      "threshold": "목표 약 0-10° (사실상 정지된 상체); 숏서브는 'flat pushing action'으로 일관되게 기술됨. scorer C3 서브 적용 금지.",
+      "forbidden_words": [
+        "엉덩이를 밀어서 / push the hip forward for power",
+        "몸통 회전 / trunk rotation",
+        "체중 이동으로 파워 / weight transfer for power",
+        "파워 / power",
+        "강하게 / hard, forcefully"
+      ],
+      "sources": [
+        "https://www.badmintonbible.com/tactics/serving/singles",
+        "https://badminton-insight.com/how-to-do-a-backhand-serve-in-badminton/",
+        "https://racket-trip.com/en/blog/articles/badminton-the-art-of-deception-and-dissimulation"
+      ],
+      "fix_ko_minor": "상체 회전을 조금 줄이고 라켓 면 컨트롤에 더 집중해 보세요."
+    },
+    "knees_bent_at_prep": {
+      "criterion_id": "C4",
+      "applies": "caution",
+      "good": "준비 자세에서 무릎을 살짝 구부려 안정적 밸런스를 확보한다. 단, 서브 동작 내내 양발은 코트에 고정되어야 한다. / Soft knee bend for a stable base, but both feet must stay stationary throughout the serve.",
+      "why": "부드러운 무릎은 무게중심을 낮춰 반복 가능한 정확한 서브를 돕는다. 단, 동적 스텝/발 구르기는 Law 9.1.1 위반(폴트)이다. / Soft knees give a stable base; any dynamic step is a fault under Law 9.1.1.",
+      "fix_ko": "무릎을 완전히 펴지 말고 살짝 구부려 안정적으로 서세요. 서브 중 발을 움직이면 폴트입니다.",
+      "fix_en": "Don't lock your knees — bend slightly for stability. Moving your feet during the serve is a fault.",
+      "threshold": "양발 고정(BWF Law 9.1.1); 무릎은 가벼운 쿼터스쿼트(정적). 동적 풋워크/점프 금지. scorer C4 적용 가능하나 '정적 밸런스'로만 해석.",
+      "forbidden_words": [
+        "스텝 / step into the serve",
+        "발을 움직여 / move your feet",
+        "발 구르기 / foot stamp",
+        "점프 / jump",
+        "뒷발로 밀어 / push off the back foot"
+      ],
+      "sources": [
+        "https://badminton-insight.com/badminton-serving-rules-with-pictures/",
+        "https://www.teachpe.com/sports-coaching/badminton/badminton-serve"
+      ],
+      "fix_ko_minor": "무릎을 살짝만 더 굽혀 안정적으로 서 보세요 (발은 고정)."
+    }
+  },
+  "forehand_drive": {
+    "peak_wrist_above_shoulder": {
+      "criterion_id": "C1",
+      "applies": "no",
+      "good": "셔틀콕을 몸 앞, 어깨~가슴 높이에서 임팩트하고 팔꿈치를 앞으로 유도한다(머리 위 아님). / Contact in front at shoulder-to-chest height with the elbow driving forward — not overhead.",
+      "why": "앞·평행 타점이 전완 회내와 수평 셔틀 속도를 극대화한다. 타점이 뒤/아래로 빠지면 라켓면이 기울어 궤적이 뜬다. / Front contact maximises pronation and flat speed; late/low contact lifts the trajectory.",
+      "fix_ko": "셔틀콕이 몸 옆·뒤로 흐르기 전에, 몸 앞 어깨 높이에서 맞히세요. 머리 위로 들어 올리지 마세요.",
+      "fix_en": "Catch the shuttle out in front at shoulder height before it drifts past you — don't lift it overhead.",
+      "threshold": "타점: 몸 앞 어깨~가슴 높이(코칭 휴리스틱, 정량 cm 없음); 네트보다 약 20cm 이상 아래면 드라이브가 아님(상승 궤적). scorer C1(손목>어깨)은 평면샷인 드라이브에 거의 부적용.",
+      "forbidden_words": [
+        "어깨 위로 높이 들어 / lift above your shoulder",
+        "머리 위에서 쳐 / hit above your head",
+        "손목이 어깨 위 / wrist above shoulder"
+      ],
+      "sources": [
+        "https://badminton-insight.com/how-to-hit-the-forehand-drive-in-badminton/",
+        "https://www.teachpe.com/sports-coaching/badminton/drive-shot",
+        "https://stbadmintonacademy.my/what-are-the-top-drills-for-improving-your-badminton-drive-shot-technique/"
+      ],
+      "fix_ko_minor": "타점을 살짝 더 앞·위에서 잡으면 드라이브가 더 날카로워져요."
+    },
+    "elbow_extension_>=160deg": {
+      "criterion_id": "C2",
+      "applies": "caution",
+      "good": "팔꿈치를 앞으로 내밀며 전완 회내(pronation)로 파워를 전달한다. 완전 신전보다 컴팩트한 약 140~160°가 정상이다. / Drive the elbow forward with forearm pronation; a compact ~140-160 deg is normal, not full lockout.",
+      "why": "드라이브 파워의 핵심은 팔꿈치 신전이 아니라 전완 회내다. 완전 신전은 스윙을 크게 해 회복·기만을 떨어뜨린다. / Pronation, not extension, drives power; full extension widens the swing and slows recovery.",
+      "fix_ko": "팔을 다 펴려 하지 말고, 팔꿈치로 앞을 밀며 전완을 빠르게 돌리세요.",
+      "fix_en": "Don't try to straighten the arm fully — drive the elbow forward and snap the forearm rotation through contact.",
+      "threshold": "드라이브 접촉 시 팔꿈치 약 157°(3D 분석, 해부학적각) — 160° 바로 아래. 권장 룰: <130°만 과굴곡 경고, 140-160°는 정상; 전완 회내 완료가 1차 체크. scorer C2의 160°는 드라이브엔 과엄격 -> 권장 완화 >=140°.",
+      "forbidden_words": [
+        "팔을 완전히 펴 / fully extend the arm",
+        "팔꿈치 다 펴서 / lock the elbow out",
+        "스매시처럼 크게 스윙 / swing big like a smash"
+      ],
+      "sources": [
+        "https://badminton-insight.com/how-to-hit-the-forehand-drive-in-badminton/",
+        "https://beastbadminton.com/badminton-wrist-training/",
+        "https://ojs.ub.uni-konstanz.de/cpa/article/view/2521/2368",
+        "https://stbadmintonacademy.my/what-are-the-top-drills-for-improving-your-badminton-drive-shot-technique/"
+      ],
+      "fix_ko_minor": "팔을 다 펴기보다, 팔꿈치로 앞을 밀며 전완을 조금 더 빠르게 돌려 보세요."
+    },
+    "hip_rotation_>=20deg": {
+      "criterion_id": "C3",
+      "applies": "yes",
+      "good": "임팩트 직전 골반·몸통을 앞으로 회전시켜 어깨가 셔틀콕 방향으로 열리며 전완 회내로 연결한다. / Unwind hips and trunk into the shot; the shoulder opens toward the shuttle and feeds the pronation.",
+      "why": "회전은 평면 드라이브의 1차 동력원이다 — 팔로만 치면 속도·일관성이 떨어지고 팔꿈치·어깨 부상 위험이 커진다. / Rotation is the main power source for a flat drive; arm-only swings lose pace and risk injury.",
+      "fix_ko": "팔만 움직이지 말고 골반부터 어깨 순으로 회전하며 셔틀콕을 치세요.",
+      "fix_en": "Don't swing with just your arm — rotate hips first, then shoulder, then drive through the shuttle.",
+      "threshold": "드라이브 측정치는 희소; 스매시 X-factor 벤치 46.9±11.2° (Zhang 2016, PMC5260572). 드라이브는 더 짧은 회전 — 권장 >=20° 바닥, 최적 약 25-35°. scorer C3 threshold = 20° 적합.",
+      "forbidden_words": [
+        "발을 옆으로 돌려 / turn your feet sideways (smash prep)",
+        "어깨를 완전히 뒤로 열어 / fully wind up the shoulder back"
+      ],
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC5260572/",
+        "https://badminton-insight.com/how-to-hit-the-forehand-drive-in-badminton/",
+        "https://www.teachpe.com/sports-coaching/badminton/drive-shot"
+      ],
+      "fix_ko_minor": "허리 회전을 조금 더 쓰면 같은 동작으로 더 강한 드라이브가 나와요."
+    },
+    "knees_bent_at_prep": {
+      "criterion_id": "C4",
+      "applies": "yes",
+      "good": "무릎을 구부린 운동 자세를 유지하고, 스플릿스텝 후 라켓 발로 한 걸음 내디디며 체중을 앞으로 이동한다. / Maintain a bent-knee athletic base; after the split-step, step the racket foot into the shot.",
+      "why": "무릎 굴곡은 무게중심을 낮추고 측면/전방 푸시오프와 지면반력 전달을 돕는다. / Flexion lowers the COM and enables push-off and ground-force transfer.",
+      "fix_ko": "무릎을 펴지 말고 항상 살짝 구부린 채로, 셔틀콕 방향으로 체중을 실어 디디세요.",
+      "fix_en": "Keep your knees soft and bent throughout — step your racket foot into the shot, never reach flat-footed.",
+      "threshold": "운동자세 무릎 굴곡 약 15-30°; 스플릿스텝 접지 약 28-32° 굴곡 (Wang 2024, PMC11117488). scorer C4 무릎각<150°=pass 적합. 풋워크는 스플릿스텝+1스텝만 평가(프로젝트 가드레일).",
+      "forbidden_words": [
+        "다리를 쭉 펴고 서 / stand with straight legs",
+        "복잡한 다단계 풋워크 / multi-step footwork sequences (클립 윈도우엔 스플릿스텝+1스텝뿐)"
+      ],
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC11117488/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC11885266/",
+        "https://badminton-insight.com/4-corner-footwork/"
+      ],
+      "fix_ko_minor": "무릎을 조금만 더 굽히면 빠른 교환에서 균형이 좋아져요."
+    }
+  },
+  "_methodology": {
+    "title": "잘못된 자세 데이터셋 없이 룰베이스로 피드백하는 표준 접근",
+    "approaches": [
+      {
+        "name": "1. 기하/임계값 룰베이스 채점 (deterministic rules)",
+        "summary": "관절 각도·위치를 스켈레톤에서 계산해 전문가 정의 임계값과 비교. '레이블이 곧 규칙'이므로 음성(잘못된 자세) 데이터가 불필요 — 규칙 위반이 정의상 오류다. 단, 각 규칙은 출판된 생체역학 측정치 또는 BWF 규정에 추적 가능해야 유효하다.",
+        "sources": [
+          "https://pmc.ncbi.nlm.nih.gov/articles/PMC12693942/"
+        ]
+      },
+      {
+        "name": "2. 좋은폼 레퍼런스 클립으로 임계값 보정 (Reference-based AQA)",
+        "summary": "임계값이 불확실하거나 모집단 편차가 클 때, 소수의 '좋은 폼' 레퍼런스 실행으로부터 임계값을 보정하고 편차로 채점. CoRe(대조 회귀)는 절대 점수 대신 레퍼런스 대비 상대 점수를 회귀해 대규모 음성 데이터 불요. FineDiving은 절차-인식 정렬로 '어느 국면이 어긋났는지' 해석 가능하게 함 — 오버헤드 국면(준비->로딩->스윙->접촉->팔로스루)에 직접 적용.",
+        "sources": [
+          "https://arxiv.org/pdf/2108.07797",
+          "https://github.com/yuxumin/CoRe",
+          "https://arxiv.org/pdf/2204.03646"
+        ]
+      },
+      {
+        "name": "3. 좋은 스켈레톤 변형으로 음성예시 합성 (검증 전용)",
+        "summary": "규칙이 잘못된 폼에서 올바르게 발화하는지 검증하기 위해, 좋은 폼 스켈레톤에 통제된 편차(관절각 섭동)를 주입해 음성예시를 합성. EGPA(오류-유도 포즈 증강) 등이 선례. ShattleCoach에서는 규칙 '학습'이 아니라 '오프라인 검증' 용도로만 사용해 결정론적·해석가능 특성을 보존.",
+        "sources": [
+          "https://arxiv.org/pdf/2506.09833",
+          "https://www.cs.huji.ac.il/~danix/publications/Deep3DPose.pdf"
+        ]
+      },
+      {
+        "name": "4. 2D 단안 포즈의 한계와 정규화",
+        "summary": "단안 2D는 사지가 이미지 평면과 평행할 때만 정확 — 팔꿈치 MAE 21.5-28.9°, 무릎 MAE 9.3-21.9°. 따라서 각도 룰은 ±20-25° 여유를 두고 해당 관절이 카메라 평면에 가까운 국면에서만 평가. 카메라-피사체 거리 편차는 shoulder-hip(체간) 거리로 모든 거리 특징을 정규화해 상쇄 (ASH 정규화).",
+        "sources": [
+          "https://pmc.ncbi.nlm.nih.gov/articles/PMC12589393/",
+          "https://pmc.ncbi.nlm.nih.gov/articles/PMC9185346/"
+        ]
+      }
+    ]
+  }
+}
