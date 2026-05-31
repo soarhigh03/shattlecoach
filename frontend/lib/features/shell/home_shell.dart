@@ -20,8 +20,9 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void initState() {
     super.initState();
-    // Onboarding hides the status bar; bring it back when the user lands here.
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Keep the system bars hidden across the home shell too — they re-appear
+    // briefly on a swipe and then auto-hide (sticky immersive).
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   static const _tabs = <_NavTab>[
