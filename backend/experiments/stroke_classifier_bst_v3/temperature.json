@@ -1,0 +1,8 @@
+{
+  "temperature": 0.8605728149414062,
+  "val_nll_pre": 0.2224176675081253,
+  "val_nll_post": 0.2173384577035904,
+  "val_ece_pre": 0.024935796533681488,
+  "val_ece_post": 0.012550441539723033,
+  "model": "V3 (10,856 train, mirror-augmented)"
+}

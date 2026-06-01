@@ -1,0 +1,54 @@
+{
+  "donghwi_clips": {
+    "dev_n": 16,
+    "test_n": 35,
+    "dev_per_class": [
+      6,
+      5,
+      5
+    ],
+    "test_per_class": [
+      14,
+      10,
+      11
+    ]
+  },
+  "baseline": {
+    "bst_test": 0.8958,
+    "donghwi_dev": 0.3125,
+    "donghwi_test": 0.2857,
+    "donghwi_test_per_class": {
+      "high_clear": 0.0,
+      "short_serve": 1.0,
+      "forehand_drive": 0.0
+    }
+  },
+  "finetune": {
+    "head": {
+      "donghwi_dev": 0.375,
+      "donghwi_test": 0.4,
+      "bst_test": 0.4944,
+      "donghwi_test_per_class": {
+        "high_clear": 1.0,
+        "short_serve": 0.0,
+        "forehand_drive": 0.0
+      },
+      "bst_forgetting_pp": 40.15
+    },
+    "block5+head": {
+      "donghwi_dev": 0.375,
+      "donghwi_test": 0.4,
+      "bst_test": 0.2579,
+      "donghwi_test_per_class": {
+        "high_clear": 1.0,
+        "short_serve": 0.0,
+        "forehand_drive": 0.0
+      },
+      "bst_forgetting_pp": 63.8
+    }
+  },
+  "chosen_regime": "head",
+  "adapted_int8_size_kb": 308.0,
+  "adapted_onnx": "scorer_v3_user_adapted.onnx",
+  "adapted_int8": "scorer_v3_user_adapted_int8.onnx"
+}

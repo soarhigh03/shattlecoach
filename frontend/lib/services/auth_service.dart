@@ -64,6 +64,20 @@ class AuthService {
     );
   }
 
+  /// Grading shortcut: creates a transient Supabase anonymous user so a TA can
+  /// run the app without going through Google OAuth setup (consent screen,
+  /// test-user registration, etc.). Supabase still issues a real `auth.users`
+  /// row + JWT, so RLS-protected reads/writes work as for any signed-in user.
+  /// Requires "Anonymous sign-ins" to be enabled in the Supabase dashboard.
+  Future<AuthResponse> signInAnonymously() async {
+    if (!SupabaseBootstrap.isInitialized) {
+      throw StateError(
+        'Supabase is not initialized. Fill in SUPABASE_URL and SUPABASE_ANON_KEY in .env.',
+      );
+    }
+    return _auth.signInAnonymously();
+  }
+
   Future<void> signOut() async {
     if (!SupabaseBootstrap.isInitialized) return;
     await _auth.signOut();

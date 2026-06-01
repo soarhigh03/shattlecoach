@@ -39,6 +39,13 @@ dependencies:
   # Inline video preview for AI coach (picked clip + algorithm output)
   video_player: ^2.9.2
 
+  # On-device ML pipeline (see frontend/lib/ml/, owner: Donghwi)
+  tflite_flutter: ^0.11.0   # MoveNet INT8 pose inference
+  image: ^4.3.0             # JPEG decode inside the pose worker isolate
+  path_provider: ^2.1.4     # temp paths used by the pipeline
+  http: ^1.2.2              # optional Groq LLM coaching (rulebook works offline)
+  flutter_onnxruntime: ^1.7.1  # ST-GCN stroke-confirmation classifier (QDQ INT8)
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -65,6 +72,16 @@ flutter:
     - assets/icons/
     - assets/logo/
     - .env
+    # On-device ML assets (loaded by frontend/lib/ml/* via rootBundle).
+    - assets/movenet_lightning_int8.tflite
+    - assets/bst_speed_percentiles.json
+    - assets/bst_step_percentiles.json
+    - assets/rule_calibration.json
+    - assets/stroke_axes.json
+    - assets/rulebook_tips.json
+    # ST-GCN stroke-confirmation classifier (domain-adapted + QDQ-INT8 quantized)
+    - assets/scorer_v3_robust_qdq_int8.onnx
+    - assets/temperature.json
 
   # Pretendard variable font. The same file is referenced per weight so
   # `FontWeight.wN00` picks the right axis instance without manual FontVariation.

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,9 +8,11 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../ml/shattle_ml.dart';
 import '../../routing/app_router.dart';
 import 'ai_coach_models.dart';
 import 'ai_coach_providers.dart';
+import 'ai_coach_widgets.dart';
 import 'trim_screen.dart';
 
 class AiCoachScreen extends ConsumerStatefulWidget {
@@ -22,21 +26,22 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
   File? _inputVideo;
   VideoPlayerController? _inputController;
 
-  /// Selected trim range (set via the trim screen). When non-null, the input
-  /// preview loops within `[_trimStart, _trimEnd]` instead of the full clip.
+  /// Selected trim range (set via the trim screen). When non-null the input
+  /// preview loops within `[_trimStart, _trimEnd]` and analysis is constrained
+  /// to the same window.
   Duration? _trimStart;
   Duration? _trimEnd;
 
   AiCoachAnalysis? _currentResult;
-  VideoPlayerController? _outputController;
-
   bool _analyzing = false;
+
+  /// Progress / error string surfaced under the result box during analysis.
+  String _statusMsg = '';
 
   @override
   void dispose() {
     _inputController?.removeListener(_enforceTrimLoop);
     _inputController?.dispose();
-    _outputController?.dispose();
     super.dispose();
   }
 
@@ -47,33 +52,35 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
     final file = File(picked.path);
     final controller = VideoPlayerController.file(file);
     await controller.initialize();
-    // Disable the built-in loop — we run our own loop based on the trim range
-    // so the controller doesn't bounce back to 0 mid-cut.
+    // We run our own [_trimStart,_trimEnd] loop, so the controller must not
+    // bounce back to 0 on its own.
     await controller.setLooping(false);
     if (!mounted) {
       await controller.dispose();
       return;
     }
     final prevInput = _inputController;
-    final prevOutput = _outputController;
     prevInput?.removeListener(_enforceTrimLoop);
     controller.addListener(_enforceTrimLoop);
     setState(() {
       _inputVideo = file;
       _inputController = controller;
-      // New clip → drop any prior trim range and result.
+      // New clip → drop prior trim range, result, and any error state.
       _trimStart = null;
       _trimEnd = null;
       _currentResult = null;
-      _outputController = null;
+      _statusMsg = '';
     });
     await prevInput?.dispose();
-    await prevOutput?.dispose();
+
+    // Drop the user straight into the trim screen — they almost always need
+    // to pick the swing window before analysis. They can still re-trim later
+    // via the "영상 자르기" button.
+    if (mounted) {
+      await _trimVideo();
+    }
   }
 
-  /// Keeps the preview inside `[_trimStart, _trimEnd]`. When playback crosses
-  /// the end handle, seek back to the start; emulates a looped range without
-  /// relying on `setLooping`.
   void _enforceTrimLoop() {
     final c = _inputController;
     final start = _trimStart;
@@ -104,29 +111,81 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
     await _inputController?.seekTo(result.start);
   }
 
-  Future<void> _runCoaching() async {
+  Future<void> _onAnalyzePressed() async {
+    if (_inputVideo == null || _analyzing) return;
+    final stroke = await _showStrokeSheet();
+    if (stroke == null) return;
+    await _runAnalysis(stroke);
+  }
+
+  Future<String?> _showStrokeSheet() async {
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => const _StrokeSheet(),
+    );
+  }
+
+  Future<void> _runAnalysis(String stroke) async {
     final input = _inputVideo;
     if (input == null) return;
-    setState(() => _analyzing = true);
-
-    // Algorithm pipeline isn't wired yet. Simulate latency so the UI states
-    // (button busy → result populated) are exercisable.
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-
-    final analysis = AiCoachAnalysis(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      createdAt: DateTime.now(),
-      inputVideo: input,
-      // outputVideo / feedback intentionally left null until the ML pipeline
-      // produces them — UI renders placeholders in that case.
-    );
-    ref.read(analysesProvider.notifier).add(analysis);
-
-    if (!mounted) return;
     setState(() {
-      _currentResult = analysis;
-      _analyzing = false;
+      _analyzing = true;
+      _statusMsg = '준비 중…';
+      _currentResult = null;
     });
+
+    try {
+      final ShattleScore score = await ShattleMl.analyzeSwing(
+        videoPath: input.path,
+        stroke: stroke,
+        startMs: _trimStart?.inMilliseconds,
+        endMs: _trimEnd?.inMilliseconds,
+        onStatus: (msg) {
+          if (mounted) setState(() => _statusMsg = msg);
+        },
+      );
+      if (!mounted) return;
+      if (!score.isOk) {
+        setState(() {
+          _analyzing = false;
+          _statusMsg = score.messageKo ?? '분석에 실패했어요.';
+        });
+        return;
+      }
+      final analysis = AiCoachAnalysis(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        createdAt: DateTime.now(),
+        inputVideo: input,
+        stroke: stroke,
+        postureStars: score.postureStars,
+        speedStars: score.speedStars,
+        stepStars: score.stepStars,
+        positives: score.positives,
+        coachingParagraph: score.coachingParagraph,
+        impactImage: score.annotatedImpactPngBase64 == null
+            ? null
+            : base64Decode(score.annotatedImpactPngBase64!),
+        predictedStroke: score.predictedStroke,
+        predictedConfidence: score.predictedConfidence,
+        strokeMismatch: score.strokeMismatch,
+      );
+      ref.read(analysesProvider.notifier).add(analysis);
+      setState(() {
+        _currentResult = analysis;
+        _analyzing = false;
+        _statusMsg = '';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _analyzing = false;
+        _statusMsg = '분석 중 오류가 발생했어요: $e';
+      });
+    }
   }
 
   @override
@@ -170,32 +229,27 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
                   Expanded(
                     child: _SecondaryButton(
                       label: '영상 자르기',
-                      enabled: hasVideo,
+                      enabled: hasVideo && !_analyzing,
                       onPressed: _trimVideo,
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: _PrimaryButton(
-                      label: 'AI 코칭 받기',
+                      label: '영상 분석하기',
                       enabled: hasVideo && !_analyzing,
                       busy: _analyzing,
-                      onPressed: _runCoaching,
+                      onPressed: _onAnalyzePressed,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              _ResultBox(
-                controller: _outputController,
-                hasResult: _currentResult != null,
+              _ResultSection(
+                result: _currentResult,
                 analyzing: _analyzing,
-              ),
-              const SizedBox(height: 14),
-              _FeedbackText(
-                feedback: _currentResult?.feedback,
-                hasResult: _currentResult != null,
-                analyzing: _analyzing,
+                statusMsg: _statusMsg,
+                onReanalyzeAs: (String s) => _runAnalysis(s),
               ),
             ],
           ),
@@ -204,6 +258,8 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
     );
   }
 }
+
+// ─── Picker box ─────────────────────────────────────────────────────────────
 
 class _PickerBox extends StatelessWidget {
   const _PickerBox({required this.controller, required this.onTap});
@@ -239,67 +295,10 @@ class _PickerBox extends StatelessWidget {
   }
 }
 
-class _ResultBox extends StatelessWidget {
-  const _ResultBox({
-    required this.controller,
-    required this.hasResult,
-    required this.analyzing,
-  });
-
-  final VideoPlayerController? controller;
-  final bool hasResult;
-  final bool analyzing;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: _resultBody(theme),
-        ),
-      ),
-    );
-  }
-
-  Widget _resultBody(ThemeData theme) {
-    if (analyzing) {
-      return const Center(
-        child: SizedBox(
-          width: 28,
-          height: 28,
-          child: CircularProgressIndicator(strokeWidth: 2.5),
-        ),
-      );
-    }
-    if (controller != null && controller!.value.isInitialized) {
-      return _VideoTile(controller: controller!);
-    }
-    return Center(
-      child: Text(
-        hasResult ? '분석 결과 영상 준비 중' : 'AI 코칭 결과가 여기에 표시돼요',
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
-
-/// Single video surface that taps to toggle play/pause. Used for both the
-/// picker preview and the result tile.
 class _VideoTile extends StatefulWidget {
   const _VideoTile({required this.controller, this.onReplace});
 
   final VideoPlayerController controller;
-
-  /// When non-null, long-press exposes a "replace" affordance.
   final VoidCallback? onReplace;
 
   @override
@@ -351,7 +350,6 @@ class _VideoTileState extends State<_VideoTile> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 16:9 frame; the picked video is cover-cropped to fill the box.
           FittedBox(
             fit: BoxFit.cover,
             clipBehavior: Clip.hardEdge,
@@ -378,40 +376,408 @@ class _VideoTileState extends State<_VideoTile> {
   }
 }
 
-class _FeedbackText extends StatelessWidget {
-  const _FeedbackText({
-    required this.feedback,
-    required this.hasResult,
+// ─── Result section ─────────────────────────────────────────────────────────
+
+class _ResultSection extends StatelessWidget {
+  const _ResultSection({
+    required this.result,
     required this.analyzing,
+    required this.statusMsg,
+    required this.onReanalyzeAs,
   });
 
-  final String? feedback;
-  final bool hasResult;
+  final AiCoachAnalysis? result;
   final bool analyzing;
+  final String statusMsg;
+  final void Function(String stroke) onReanalyzeAs;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final String label;
+
     if (analyzing) {
-      label = '분석 중...';
-    } else if (feedback != null) {
-      label = feedback!;
-    } else if (hasResult) {
-      label = '텍스트 피드백 준비 중';
-    } else {
-      label = 'text feedback';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _ResultImageBox.placeholder(child: _Spinner()),
+          const SizedBox(height: 12),
+          Text(
+            statusMsg.isEmpty ? '분석 중…' : statusMsg,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      );
     }
-    return Text(
-      label,
-      style: theme.textTheme.bodyMedium?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: theme.colorScheme.onSurface,
-        height: 1.45,
+
+    final r = result;
+    if (r == null) {
+      // Either idle or surfacing the last error from a failed run.
+      final isError = statusMsg.isNotEmpty;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ResultImageBox.placeholder(
+            child: Center(
+              child: Text(
+                isError ? '분석을 다시 시도해 주세요' : 'AI 코칭 결과가 여기에 표시돼요',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          if (isError) ...[
+            const SizedBox(height: 12),
+            Text(
+              statusMsg,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Impact image, with the stroke-confirmation popup overlaid on top of
+        // it when the classifier confidently disagrees with the user's pick.
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            _ResultImageBox(image: r.impactImage),
+            // Popup overlaid on the image. Anchored to the image's left/right/
+            // bottom but free to grow downward past the 16:9 box so the buttons
+            // are never clipped (and stay tappable).
+            if (r.strokeMismatch && r.predictedStroke != null)
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: 8,
+                child: _StrokeMismatchPopup(
+                  chosen: r.stroke,
+                  predicted: r.predictedStroke!,
+                  confidence: r.predictedConfidence ?? 0,
+                  onReanalyze: () => onReanalyzeAs(r.predictedStroke!),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        StarsBlock(analysis: r),
+        const SizedBox(height: 20),
+        if (r.positives.isNotEmpty) ...[
+          const SectionHeader('잘한 점'),
+          const SizedBox(height: 8),
+          for (final p in r.positives) PositiveLine(p),
+          const SizedBox(height: 20),
+        ],
+        const SectionHeader('코칭'),
+        const SizedBox(height: 8),
+        Text(
+          r.coachingParagraph.isEmpty
+              ? '코칭 문구를 생성하지 못했어요.'
+              : r.coachingParagraph,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            height: 1.55,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ResultImageBox extends StatelessWidget {
+  const _ResultImageBox({required this.image}) : _placeholder = null;
+  const _ResultImageBox.placeholder({required Widget child})
+    : image = null,
+      _placeholder = child;
+
+  final Uint8List? image;
+  final Widget? _placeholder;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: _body(theme),
+        ),
+      ),
+    );
+  }
+
+  Widget _body(ThemeData theme) {
+    if (_placeholder != null) return _placeholder;
+    if (image != null) {
+      return Image.memory(image!, fit: BoxFit.contain, gaplessPlayback: true);
+    }
+    return Center(
+      child: Text(
+        '임팩트 사진 준비 중',
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
 }
+
+class _Spinner extends StatelessWidget {
+  const _Spinner();
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: SizedBox(
+        width: 28,
+        height: 28,
+        child: CircularProgressIndicator(strokeWidth: 2.5),
+      ),
+    );
+  }
+}
+
+/// Popup overlaid on the impact image when the on-device classifier confidently
+/// disagrees with the user's chosen stroke. Offers a one-tap re-analysis with
+/// the detected stroke; dismissable (X) to keep the current result.
+class _StrokeMismatchPopup extends StatefulWidget {
+  const _StrokeMismatchPopup({
+    required this.chosen,
+    required this.predicted,
+    required this.confidence,
+    required this.onReanalyze,
+  });
+
+  final String chosen;
+  final String predicted;
+  final double confidence;
+  final VoidCallback onReanalyze;
+
+  @override
+  State<_StrokeMismatchPopup> createState() => _StrokeMismatchPopupState();
+}
+
+class _StrokeMismatchPopupState extends State<_StrokeMismatchPopup> {
+  bool _dismissed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_dismissed) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final chosenKo = kStrokeLabelKo[widget.chosen] ?? widget.chosen;
+    final predictedKo = kStrokeLabelKo[widget.predicted] ?? widget.predicted;
+    final pct = (widget.confidence * 100).round();
+
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
+      elevation: 8,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 14, 12, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.help_outline_rounded,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '동작이 다르게 인식됐어요',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () => setState(() => _dismissed = true),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "'$chosenKo'를 선택하셨는데 '$predictedKo'로 인식되었습니다. "
+              "'$predictedKo'로 테스트하시겠습니까?",
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.45,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '인식 확신도 $pct%',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => setState(() => _dismissed = true),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onSurface,
+                      side: BorderSide(color: theme.colorScheme.outlineVariant),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('아니요'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () {
+                      setState(() => _dismissed = true);
+                      widget.onReanalyze();
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      "'$predictedKo'로",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Stroke selector bottom sheet ───────────────────────────────────────────
+
+class _StrokeSheet extends StatelessWidget {
+  const _StrokeSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(
+              '어떤 동작을 분석할까요?',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '동작에 따라 평가하는 항목이 달라져요.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (final entry in kStrokeLabelKo.entries) ...[
+              _StrokeOption(stroke: entry.key, label: entry.value),
+              if (entry.key != kStrokeLabelKo.keys.last)
+                const SizedBox(height: 8),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StrokeOption extends StatelessWidget {
+  const _StrokeOption({required this.stroke, required this.label});
+  final String stroke;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.of(context).pop(stroke),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Buttons / labels ───────────────────────────────────────────────────────
 
 class _PrimaryButton extends StatelessWidget {
   const _PrimaryButton({

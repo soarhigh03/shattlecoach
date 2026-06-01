@@ -35,6 +35,23 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     }
   }
 
+  Future<void> _signInAnonymously() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(authServiceProvider).signInAnonymously();
+      if (!mounted) return;
+      context.go(AppRoute.onboardingIntro);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final configured = SupabaseBootstrap.isInitialized;
@@ -71,6 +88,11 @@ class _SignInPageState extends ConsumerState<SignInPage> {
                 const SizedBox(height: 12),
               ],
               _GoogleSignInButton(busy: _busy, onPressed: _signIn),
+              const SizedBox(height: 12),
+              _AnonymousSignInButton(
+                busy: _busy,
+                onPressed: _signInAnonymously,
+              ),
               const Spacer(flex: 7),
               Text(
                 '© shattlecock 2026',
@@ -140,6 +162,37 @@ class _GoogleSignInButton extends StatelessWidget {
                     ],
                   ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Subdued text button intended for graders/TAs — clearly secondary to the
+/// primary Google flow so a regular user is unlikely to tap it by mistake.
+class _AnonymousSignInButton extends StatelessWidget {
+  const _AnonymousSignInButton({required this.busy, required this.onPressed});
+
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: TextButton(
+        onPressed: busy ? null : onPressed,
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.white.withValues(alpha: 0.7),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+          ),
+        ),
+        child: const Text(
+          '채점용 게스트 로그인',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
       ),
     );

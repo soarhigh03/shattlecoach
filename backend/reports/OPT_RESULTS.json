@@ -1,0 +1,174 @@
+{
+  "test_set": {
+    "n": 1776,
+    "support": {
+      "high_clear": 878,
+      "short_serve": 458,
+      "forehand_drive": 440
+    },
+    "classes": [
+      "high_clear",
+      "short_serve",
+      "forehand_drive"
+    ],
+    "split": "BST ShuttleSet_25c + BadmintonDB held-out test"
+  },
+  "fp32_baseline": {
+    "name": "FP32 baseline (PyTorch)",
+    "size_kb": 1057.7,
+    "n_params": 268618,
+    "top1_acc": 0.8958,
+    "macro_f1": 0.8926,
+    "per_class": {
+      "high_clear": {
+        "precision": 0.9061,
+        "recall": 0.8907,
+        "f1": 0.8983,
+        "support": 878
+      },
+      "short_serve": {
+        "precision": 0.9122,
+        "recall": 0.9978,
+        "f1": 0.9531,
+        "support": 458
+      },
+      "forehand_drive": {
+        "precision": 0.8544,
+        "recall": 0.8,
+        "f1": 0.8263,
+        "support": 440
+      }
+    },
+    "latency_ms": 1.475
+  },
+  "dynamic_int8": {
+    "name": "Dynamic INT8 (ONNX, weight-only)",
+    "size_kb": 307.8,
+    "top1_acc": 0.897,
+    "macro_f1": 0.8936,
+    "per_class": {
+      "high_clear": {
+        "precision": 0.9054,
+        "recall": 0.8941,
+        "f1": 0.8997,
+        "support": 878
+      },
+      "short_serve": {
+        "precision": 0.912,
+        "recall": 0.9956,
+        "f1": 0.952,
+        "support": 458
+      },
+      "forehand_drive": {
+        "precision": 0.8606,
+        "recall": 0.8,
+        "f1": 0.8292,
+        "support": 440
+      }
+    },
+    "latency_ms": 6.784,
+    "path": "scorer_v3_int8_dynamic.onnx"
+  },
+  "static_int8_rolled_back": {
+    "name": "Static INT8 QDQ (rolled back)",
+    "size_kb": 327.1,
+    "top1_acc": 0.6869,
+    "note": "calibration-based; activations also quantized"
+  },
+  "pruning": [
+    {
+      "name": "Pruned L1 30% (no fine-tune)",
+      "sparsity": 0.3,
+      "nonzero_params": 188842,
+      "total_params": 268618,
+      "nonzero_fraction": 0.703,
+      "top1_acc": 0.897,
+      "macro_f1": 0.8939,
+      "per_class": {
+        "high_clear": {
+          "precision": 0.9092,
+          "recall": 0.8895,
+          "f1": 0.8993,
+          "support": 878
+        },
+        "short_serve": {
+          "precision": 0.9122,
+          "recall": 0.9978,
+          "f1": 0.9531,
+          "support": 458
+        },
+        "forehand_drive": {
+          "precision": 0.8534,
+          "recall": 0.8068,
+          "f1": 0.8294,
+          "support": 440
+        }
+      },
+      "latency_ms": 1.398
+    },
+    {
+      "name": "Pruned L1 50% (no fine-tune)",
+      "sparsity": 0.5,
+      "nonzero_params": 135658,
+      "total_params": 268618,
+      "nonzero_fraction": 0.505,
+      "top1_acc": 0.8874,
+      "macro_f1": 0.8867,
+      "per_class": {
+        "high_clear": {
+          "precision": 0.9138,
+          "recall": 0.8576,
+          "f1": 0.8848,
+          "support": 878
+        },
+        "short_serve": {
+          "precision": 0.9194,
+          "recall": 0.9956,
+          "f1": 0.956,
+          "support": 458
+        },
+        "forehand_drive": {
+          "precision": 0.8048,
+          "recall": 0.8341,
+          "f1": 0.8192,
+          "support": 440
+        }
+      },
+      "latency_ms": 1.592
+    },
+    {
+      "name": "Pruned L1 70% (no fine-tune)",
+      "sparsity": 0.7,
+      "nonzero_params": 82474,
+      "total_params": 268618,
+      "nonzero_fraction": 0.307,
+      "top1_acc": 0.7258,
+      "macro_f1": 0.7512,
+      "per_class": {
+        "high_clear": {
+          "precision": 0.9804,
+          "recall": 0.5137,
+          "f1": 0.6741,
+          "support": 878
+        },
+        "short_serve": {
+          "precision": 1.0,
+          "recall": 0.8843,
+          "f1": 0.9386,
+          "support": 458
+        },
+        "forehand_drive": {
+          "precision": 0.4753,
+          "recall": 0.9841,
+          "f1": 0.641,
+          "support": 440
+        }
+      },
+      "latency_ms": 1.479
+    }
+  ],
+  "deltas_vs_fp32": {
+    "dynamic_int8_acc_pp": 0.12,
+    "dynamic_int8_size_ratio": 3.44
+  }
+}
