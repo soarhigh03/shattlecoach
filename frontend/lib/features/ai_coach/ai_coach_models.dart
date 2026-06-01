@@ -26,6 +26,9 @@ class AiCoachAnalysis {
     this.speedStars,
     this.stepStars,
     this.impactImage,
+    this.predictedStroke,
+    this.predictedConfidence,
+    this.strokeMismatch = false,
   });
 
   final String id;
@@ -42,6 +45,13 @@ class AiCoachAnalysis {
   /// it. Null when the ML pipeline could not produce one (low detection rate,
   /// decode failure, etc.).
   final Uint8List? impactImage;
+
+  /// Stroke-confirmation classifier output (best-effort). [strokeMismatch] is
+  /// true when the classifier confidently disagrees with the user's pick; the
+  /// UI then offers a re-analysis. Null/false when the check was skipped.
+  final String? predictedStroke;
+  final double? predictedConfidence;
+  final bool strokeMismatch;
 
   /// Calendar-bucket key (year/month/day at midnight) used by the heatmap.
   DateTime get day => DateTime(createdAt.year, createdAt.month, createdAt.day);
