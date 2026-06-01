@@ -8,6 +8,8 @@ frame, and a short Korean coaching note — all computed on the phone, no server
 
 **Demo video:** https://youtube.com/shorts/_lbC8qLcBfQ
 
+**Final presentation material & APK:** https://drive.google.com/drive/folders/1at_YmqlSkb6CpQMJZMTCrNLB2ZeH82bC?usp=share_link
+
 ---
 
 ## Layout
