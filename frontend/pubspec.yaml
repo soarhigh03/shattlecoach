@@ -44,6 +44,7 @@ dependencies:
   image: ^4.3.0             # JPEG decode inside the pose worker isolate
   path_provider: ^2.1.4     # temp paths used by the pipeline
   http: ^1.2.2              # optional Groq LLM coaching (rulebook works offline)
+  flutter_onnxruntime: ^1.7.1  # ST-GCN stroke-confirmation classifier (QDQ INT8)
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +79,9 @@ flutter:
     - assets/rule_calibration.json
     - assets/stroke_axes.json
     - assets/rulebook_tips.json
+    # ST-GCN stroke-confirmation classifier (domain-adapted + QDQ-INT8 quantized)
+    - assets/scorer_v3_robust_qdq_int8.onnx
+    - assets/temperature.json
 
   # Pretendard variable font. The same file is referenced per weight so
   # `FontWeight.wN00` picks the right axis instance without manual FontVariation.

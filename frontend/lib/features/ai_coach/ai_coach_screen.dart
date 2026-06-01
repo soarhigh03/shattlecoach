@@ -169,6 +169,9 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
         impactImage: score.annotatedImpactPngBase64 == null
             ? null
             : base64Decode(score.annotatedImpactPngBase64!),
+        predictedStroke: score.predictedStroke,
+        predictedConfidence: score.predictedConfidence,
+        strokeMismatch: score.strokeMismatch,
       );
       ref.read(analysesProvider.notifier).add(analysis);
       setState(() {
@@ -246,6 +249,7 @@ class _AiCoachScreenState extends ConsumerState<AiCoachScreen> {
                 result: _currentResult,
                 analyzing: _analyzing,
                 statusMsg: _statusMsg,
+                onReanalyzeAs: (String s) => _runAnalysis(s),
               ),
             ],
           ),
@@ -379,11 +383,13 @@ class _ResultSection extends StatelessWidget {
     required this.result,
     required this.analyzing,
     required this.statusMsg,
+    required this.onReanalyzeAs,
   });
 
   final AiCoachAnalysis? result;
   final bool analyzing;
   final String statusMsg;
+  final void Function(String stroke) onReanalyzeAs;
 
   @override
   Widget build(BuildContext context) {
@@ -440,7 +446,29 @@ class _ResultSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _ResultImageBox(image: r.impactImage),
+        // Impact image, with the stroke-confirmation popup overlaid on top of
+        // it when the classifier confidently disagrees with the user's pick.
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            _ResultImageBox(image: r.impactImage),
+            // Popup overlaid on the image. Anchored to the image's left/right/
+            // bottom but free to grow downward past the 16:9 box so the buttons
+            // are never clipped (and stay tappable).
+            if (r.strokeMismatch && r.predictedStroke != null)
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: 8,
+                child: _StrokeMismatchPopup(
+                  chosen: r.stroke,
+                  predicted: r.predictedStroke!,
+                  confidence: r.predictedConfidence ?? 0,
+                  onReanalyze: () => onReanalyzeAs(r.predictedStroke!),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: 18),
         StarsBlock(analysis: r),
         const SizedBox(height: 20),
@@ -518,6 +546,141 @@ class _Spinner extends StatelessWidget {
         width: 28,
         height: 28,
         child: CircularProgressIndicator(strokeWidth: 2.5),
+      ),
+    );
+  }
+}
+
+/// Popup overlaid on the impact image when the on-device classifier confidently
+/// disagrees with the user's chosen stroke. Offers a one-tap re-analysis with
+/// the detected stroke; dismissable (X) to keep the current result.
+class _StrokeMismatchPopup extends StatefulWidget {
+  const _StrokeMismatchPopup({
+    required this.chosen,
+    required this.predicted,
+    required this.confidence,
+    required this.onReanalyze,
+  });
+
+  final String chosen;
+  final String predicted;
+  final double confidence;
+  final VoidCallback onReanalyze;
+
+  @override
+  State<_StrokeMismatchPopup> createState() => _StrokeMismatchPopupState();
+}
+
+class _StrokeMismatchPopupState extends State<_StrokeMismatchPopup> {
+  bool _dismissed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_dismissed) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final chosenKo = kStrokeLabelKo[widget.chosen] ?? widget.chosen;
+    final predictedKo = kStrokeLabelKo[widget.predicted] ?? widget.predicted;
+    final pct = (widget.confidence * 100).round();
+
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
+      elevation: 8,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 14, 12, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.help_outline_rounded,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '동작이 다르게 인식됐어요',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () => setState(() => _dismissed = true),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "'$chosenKo'를 선택하셨는데 '$predictedKo'로 인식되었습니다. "
+              "'$predictedKo'로 테스트하시겠습니까?",
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.45,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '인식 확신도 $pct%',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => setState(() => _dismissed = true),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onSurface,
+                      side: BorderSide(color: theme.colorScheme.outlineVariant),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('아니요'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () {
+                      setState(() => _dismissed = true);
+                      widget.onReanalyze();
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      "'$predictedKo'로",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

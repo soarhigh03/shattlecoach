@@ -13,6 +13,10 @@ import 'rule_calibration.dart';
 import 'rule_scorer.dart';
 import 'rulebook_tips.dart';
 import 'speed_step_scorer.dart';
+import 'stroke_classifier.dart';
+
+/// Min classifier confidence before we question the user's manual stroke pick.
+const double kStrokeConfirmThreshold = 0.70;
 
 /// The three strokes the user can pick. Pass one of these to [ShattleMl.analyzeSwing].
 const List<String> kShattleStrokes = <String>[
@@ -40,6 +44,10 @@ class ShattleScore {
   annotatedImpactPngBase64; // impact frame with markers (base64 PNG) or null
   final String? annotationSkipReason; // why the image is null, if so
   final double processingSeconds;
+  // Stroke confirmation (best-effort; the user's pick still drives scoring).
+  final String? predictedStroke; // classifier's guess, null if check skipped
+  final double? predictedConfidence; // 0..1, null if skipped
+  final bool strokeMismatch; // confident disagreement with user's pick
   final Map<String, dynamic> raw; // full payload for advanced/debug use
 
   ShattleScore({
@@ -56,6 +64,9 @@ class ShattleScore {
     this.annotatedImpactPngBase64,
     this.annotationSkipReason,
     required this.processingSeconds,
+    this.predictedStroke,
+    this.predictedConfidence,
+    this.strokeMismatch = false,
     required this.raw,
   });
 
@@ -255,6 +266,33 @@ class ShattleMl {
     }
     payload['rulebook'] = rb;
 
+    // Stroke confirmation (best-effort): run the QDQ-INT8 classifier to sanity-
+    // check the user's manual pick. Never blocks scoring — any failure is
+    // swallowed. The user's choice still drives all scoring above; this only
+    // sets a UI hint flag (strokeMismatch).
+    String? predictedStroke;
+    double? predictedConfidence;
+    bool strokeMismatch = false;
+    try {
+      final StrokeClassifier? clf = await StrokeClassifier.tryLoad();
+      if (clf != null) {
+        onStatus?.call('동작 확인 중…');
+        final StrokePrediction pred = await clf.predict(kpts);
+        predictedStroke = pred.label;
+        predictedConfidence = pred.topConfidence;
+        strokeMismatch =
+            pred.label != stroke &&
+            pred.topConfidence >= kStrokeConfirmThreshold;
+        payload['stroke_check'] = <String, dynamic>{
+          ...pred.toJson(),
+          'user_selected': stroke,
+          'mismatch': strokeMismatch,
+        };
+      }
+    } catch (_) {
+      // classifier unavailable / inference failed → skip confirmation silently
+    }
+
     sw.stop();
     payload['processing_seconds'] = sw.elapsedMilliseconds / 1000.0;
 
@@ -284,6 +322,9 @@ class ShattleMl {
           payload['annotated_impact_png_base64'] as String?,
       annotationSkipReason: payload['annotation_skip_reason'] as String?,
       processingSeconds: payload['processing_seconds'] as double,
+      predictedStroke: predictedStroke,
+      predictedConfidence: predictedConfidence,
+      strokeMismatch: strokeMismatch,
       raw: payload,
     );
   }
