@@ -280,7 +280,8 @@ class ShattleMl {
         final StrokePrediction pred = await clf.predict(kpts);
         predictedStroke = pred.label;
         predictedConfidence = pred.topConfidence;
-        strokeMismatch = pred.label != stroke &&
+        strokeMismatch =
+            pred.label != stroke &&
             pred.topConfidence >= kStrokeConfirmThreshold;
         payload['stroke_check'] = <String, dynamic>{
           ...pred.toJson(),

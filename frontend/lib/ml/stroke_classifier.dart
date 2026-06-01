@@ -73,8 +73,9 @@ class StrokeClassifier {
     if (_instance != null) return _instance;
     if (_loadFailed) return null;
     try {
-      final OrtSession session =
-          await OnnxRuntime().createSessionFromAsset(kClassifierAsset);
+      final OrtSession session = await OnnxRuntime().createSessionFromAsset(
+        kClassifierAsset,
+      );
       String inputName = 'skeleton';
       try {
         final List<String> names = session.inputNames;
@@ -110,8 +111,12 @@ class StrokeClassifier {
         }
       }
     }
-    final OrtValue inp =
-        await OrtValue.fromList(flat, <int>[1, 3, kTargetTime, 17]);
+    final OrtValue inp = await OrtValue.fromList(flat, <int>[
+      1,
+      3,
+      kTargetTime,
+      17,
+    ]);
     Map<String, OrtValue>? outs;
     try {
       outs = await _session.run(<String, OrtValue>{_inputName: inp});
@@ -120,11 +125,13 @@ class StrokeClassifier {
       final List<double> logits = (nested.first as List<dynamic>)
           .map<double>((dynamic e) => (e as num).toDouble())
           .toList();
-      final List<double> scaled =
-          logits.map<double>((double v) => v / _temperature).toList();
+      final List<double> scaled = logits
+          .map<double>((double v) => v / _temperature)
+          .toList();
       final double mx = scaled.reduce(math.max);
-      final List<double> ex =
-          scaled.map<double>((double v) => math.exp(v - mx)).toList();
+      final List<double> ex = scaled
+          .map<double>((double v) => math.exp(v - mx))
+          .toList();
       final double s = ex.reduce((double a, double b) => a + b);
       final List<double> probs = ex.map<double>((double e) => e / s).toList();
       int top = 0;
@@ -155,10 +162,7 @@ class StrokeClassifier {
 
 // ----- preprocessing: mirrors retrain_robust.py norm_clip (eval path) -----
 
-List<List<List<double>>> _preprocess(
-  List<List<List<double>>> kpts,
-  int tOut,
-) {
+List<List<List<double>>> _preprocess(List<List<List<double>>> kpts, int tOut) {
   final int t = kpts.length;
   final List<List<List<double>>> out = List<List<List<double>>>.generate(
     t,
@@ -168,18 +172,24 @@ List<List<List<double>>> _preprocess(
     ),
   );
   for (int i = 0; i < t; i++) {
-    final List<double> conf = <double>[for (int j = 0; j < 17; j++) out[i][j][2]];
-    final List<double> mh =
-        _gatedMean(out[i], conf, _idx['left_hip']!, _idx['right_hip']!);
+    final List<double> conf = <double>[
+      for (int j = 0; j < 17; j++) out[i][j][2],
+    ];
+    final List<double> mh = _gatedMean(
+      out[i],
+      conf,
+      _idx['left_hip']!,
+      _idx['right_hip']!,
+    );
     final List<double> ms = _gatedMean(
       out[i],
       conf,
       _idx['left_shoulder']!,
       _idx['right_shoulder']!,
     );
-    final double scale = math.sqrt(
-          (ms[0] - mh[0]) * (ms[0] - mh[0]) +
-              (ms[1] - mh[1]) * (ms[1] - mh[1]),
+    final double scale =
+        math.sqrt(
+          (ms[0] - mh[0]) * (ms[0] - mh[0]) + (ms[1] - mh[1]) * (ms[1] - mh[1]),
         ) +
         1e-6;
     for (int j = 0; j < 17; j++) {
