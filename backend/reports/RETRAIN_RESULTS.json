@@ -1,0 +1,31 @@
+{
+  "baseline": {
+    "donghwi_test": 0.2857,
+    "bst_test": 0.8958
+  },
+  "robust": {
+    "donghwi_test": 0.8286,
+    "donghwi_test_per_class": {
+      "high_clear": 0.786,
+      "short_serve": 0.8,
+      "forehand_drive": 0.909
+    },
+    "donghwi_dev": 0.9375,
+    "bst_test": 0.4944,
+    "bst_per_class": {
+      "high_clear": 1.0,
+      "short_serve": 0.0,
+      "forehand_drive": 0.0
+    }
+  },
+  "quantized": {
+    "fp32_onnx_kb": 1060.7,
+    "int8_onnx_kb": 308.0,
+    "donghwi_test_acc_int8": 0.8,
+    "size_ratio": 3.44
+  },
+  "donghwi_counts": {
+    "dev": 16,
+    "test": 35
+  }
+}
